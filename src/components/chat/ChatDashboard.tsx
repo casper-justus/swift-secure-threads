@@ -46,19 +46,29 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
 
   const fetchUserProfile = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error, status } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, name, username, avatar_url")
         .eq("id", session.user.id)
         .single();
 
-      if (error && error.code !== "PGRST116") {
-        console.error("Error fetching profile:", error);
+      if (error && status !== 406) { // 406 can mean single() found no rows, which is fine if profile is new
+        console.error("Error fetching profile:", error.message);
+        toast({
+          title: "Error Fetching Profile",
+          description: error.message || "Could not load your profile data.",
+          variant: "destructive",
+        });
       } else if (data) {
-        setUserProfile(data);
+        setUserProfile(data as UserProfile); // Cast to UserProfile type
       }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
+    } catch (error: any) {
+      console.error("Unexpected error fetching profile:", error.message);
+      toast({
+        title: "Profile Load Error",
+        description: "An unexpected error occurred while loading your profile.",
+        variant: "destructive",
+      });
     }
   };
 

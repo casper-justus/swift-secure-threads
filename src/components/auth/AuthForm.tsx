@@ -37,6 +37,7 @@ export const AuthForm = () => {
             description: passwordError,
             variant: "destructive",
           });
+          setLoading(false); // Ensure loading is set to false
           return;
         }
 
@@ -48,7 +49,14 @@ export const AuthForm = () => {
           },
         });
         
-        if (error) throw error;
+        if (error) {
+          toast({
+            title: "Sign Up Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error; // Re-throw to be caught by the generic catch block if needed, or handle specifically
+        }
         
         setEmailSent(true);
         toast({
@@ -60,14 +68,26 @@ export const AuthForm = () => {
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          toast({
+            title: "Sign In Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error; // Re-throw
+        }
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Generic catch for unexpected errors, specific ones are handled above.
+      // Avoid showing duplicate toasts if already handled.
+      if (!toast.isActive(`toast-${isSignUp ? 'Sign Up Failed' : 'Sign In Failed'}-${error.message}`)) {
+        toast({
+          id: `toast-auth-error-${error.message}`,
+          title: isSignUp ? "Sign Up Error" : "Sign In Error",
+          description: error.message || "An unexpected error occurred.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -179,17 +199,17 @@ export const AuthForm = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-white/10 border-purple-500/30 text-white placeholder:text-gray-400"
+                  className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-ring"
                 />
                 {isSignUp && (
-                  <div className="mt-2 text-xs text-gray-400 space-y-1">
-                    <p>Password requirements:</p>
-                    <ul className="list-disc list-inside space-y-1">
+                  <div className="mt-2 text-xs text-muted-foreground/80 space-y-1 p-2 rounded-md bg-muted/50 border border-border">
+                    <p className="font-medium text-muted-foreground">Password requirements:</p>
+                    <ul className="list-disc list-inside space-y-0.5 text-muted-foreground/90">
                       <li>At least 8 characters</li>
-                      <li>One uppercase letter</li>
-                      <li>One lowercase letter</li>
-                      <li>One number</li>
-                      <li>One special character</li>
+                      <li>One uppercase letter (A-Z)</li>
+                      <li>One lowercase letter (a-z)</li>
+                      <li>One number (0-9)</li>
+                      <li>One special character (e.g., !@#$%)</li>
                     </ul>
                   </div>
                 )}
