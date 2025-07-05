@@ -158,6 +158,7 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          updated_at: string | null
           username: string | null
         }
         Insert: {
@@ -166,6 +167,7 @@ export type Database = {
           email?: string | null
           id: string
           name?: string | null
+          updated_at?: string | null
           username?: string | null
         }
         Update: {
@@ -174,6 +176,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          updated_at?: string | null
           username?: string | null
         }
         Relationships: []
@@ -343,6 +346,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_room_creator: {
+        Args: { room_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
+      is_room_member: {
+        Args: { room_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
       requesting_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
