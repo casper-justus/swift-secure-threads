@@ -31,9 +31,10 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
         <Button
           type="submit"
           disabled={!message.trim()}
-          className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+          className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white"
         >
-          <Send className="h-4 w-4" />
+          <Send className="h-4 w-4 mr-1" />
+          <span>Send</span>
         </Button>
       </form>
     </div>

@@ -43,7 +43,9 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          double_encrypted_content: string | null
           encrypted_for: Json | null
+          encryption_metadata: Json | null
           id: string
           message_type: string
           room_id: string
@@ -52,7 +54,9 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          double_encrypted_content?: string | null
           encrypted_for?: Json | null
+          encryption_metadata?: Json | null
           id?: string
           message_type?: string
           room_id: string
@@ -61,7 +65,9 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          double_encrypted_content?: string | null
           encrypted_for?: Json | null
+          encryption_metadata?: Json | null
           id?: string
           message_type?: string
           room_id?: string
@@ -272,6 +278,33 @@ export type Database = {
           },
         ]
       }
+      user_encryption_keys: {
+        Row: {
+          created_at: string
+          id: string
+          master_key_encrypted: string
+          salt: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          master_key_encrypted: string
+          salt: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          master_key_encrypted?: string
+          salt?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_liked_songs: {
         Row: {
           liked_at: string | null
@@ -313,6 +346,10 @@ export type Database = {
       requesting_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      validate_password: {
+        Args: { password: string }
+        Returns: boolean
       }
     }
     Enums: {

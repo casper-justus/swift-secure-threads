@@ -125,7 +125,7 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-purple-600 hover:bg-purple-700"
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
             >
               {loading ? "Creating..." : "Create Room"}
             </Button>

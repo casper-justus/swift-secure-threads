@@ -64,17 +64,19 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
               <Button
                 size="sm"
                 onClick={() => setShowCreateRoom(true)}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-purple-600 hover:bg-purple-700 text-white"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-1" />
+                <span>New Room</span>
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleSignOut}
-                className="text-gray-300 hover:text-white"
+                className="text-gray-300 hover:text-white hover:bg-white/5"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 mr-1" />
+                <span>Sign Out</span>
               </Button>
             </div>
           </div>
