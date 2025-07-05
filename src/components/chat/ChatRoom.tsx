@@ -22,6 +22,10 @@ interface Message {
   content: string;
   created_at: string;
   message_type: string;
+  file_url?: string;
+  file_name?: string;
+  file_type?: string;
+  file_size?: number;
 }
 
 interface ChatRoomProps {
@@ -89,15 +93,29 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, fileData?: {
+    fileUrl: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+  }) => {
+    const messageData: any = {
+      room_id: room.id,
+      user_id: userId,
+      content: content || `Shared ${fileData?.fileName}`,
+      message_type: fileData ? "file" : "text",
+    };
+
+    if (fileData) {
+      messageData.file_url = fileData.fileUrl;
+      messageData.file_name = fileData.fileName;
+      messageData.file_type = fileData.fileType;
+      messageData.file_size = fileData.fileSize;
+    }
+
     const { error } = await supabase
       .from("messages")
-      .insert({
-        room_id: room.id,
-        user_id: userId,
-        content,
-        message_type: "text",
-      });
+      .insert(messageData);
 
     if (error) {
       toast({
