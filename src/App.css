@@ -1,22 +1,54 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Basic reset and body styles that might have been in App.css or index.css previously */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: hsl(var(--background)); /* Use CSS var for background */
+  color: hsl(var(--foreground)); /* Use CSS var for text */
 }
 
+#root {
+  /* Ensuring #root takes full height if you want a full-page app feel */
+  /* min-height: 100vh; */
+  /* display: flex; */
+  /* flex-direction: column; */
+  /* align-items: center; */ /* This was causing centering of everything */
+  padding: 0; /* Remove padding if layout is handled by components */
+  margin: 0; /* Remove margin */
+  width: 100%; /* Ensure it spans full width */
+  max-width: none; /* Override max-width if set */
+  text-align: left; /* Reset text-align if not desired globally */
+}
+
+
+/* Example of a more specific component style if needed, though Tailwind is preferred */
+.custom-component {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+}
+
+/* Logo styles - if you have a logo and want to apply theme colors */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
+
+/* Example: Using primary color for logo shadow on hover */
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em hsl(var(--primary)));
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+
+/* .logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa); // Consider theming this if needed
+} */
 
 @keyframes logo-spin {
   from {
@@ -27,16 +59,14 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
+/* .read-the-docs {
+  color: hsl(var(--muted-foreground)); // Use themed color
+} */
 
-.card {
+/* Remove .card if it's too generic and conflicts with Tailwind Card component */
+/* .card {
   padding: 2em;
-}
+} */
 
-.read-the-docs {
-  color: #888;
-}
+/* Ensure specific components like UserProfile are styled via their own files or Tailwind classes */
+/* Styles for UserProfile are in UserProfile.tsx using Tailwind */
