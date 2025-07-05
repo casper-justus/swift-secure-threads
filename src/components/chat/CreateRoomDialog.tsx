@@ -28,6 +28,8 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
     setLoading(true);
 
     try {
+      console.log("Creating room with userId:", userId);
+      
       // Create the room
       const { data: room, error: roomError } = await supabase
         .from("chat_rooms")
@@ -40,7 +42,12 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
         .select()
         .single();
 
-      if (roomError) throw roomError;
+      if (roomError) {
+        console.error("Room creation error:", roomError);
+        throw roomError;
+      }
+
+      console.log("Room created successfully:", room);
 
       // Add the creator as a member
       const { error: memberError } = await supabase
@@ -51,7 +58,10 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
           role: "admin",
         });
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Member addition error:", memberError);
+        throw memberError;
+      }
 
       toast({
         title: "Room created",
@@ -64,9 +74,10 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
       onOpenChange(false);
       onRoomCreated();
     } catch (error: any) {
+      console.error("Full error object:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create room",
         variant: "destructive",
       });
     } finally {

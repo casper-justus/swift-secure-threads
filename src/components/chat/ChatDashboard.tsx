@@ -9,7 +9,7 @@ import { RoomList } from "./RoomList";
 import { ChatRoom } from "./ChatRoom";
 import { CreateRoomDialog } from "./CreateRoomDialog";
 import { UserProfile } from "../profile/UserProfile";
-import { LogOut, Plus, Trash2 } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ChatRoom {
