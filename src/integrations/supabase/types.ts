@@ -39,6 +39,38 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -52,9 +84,11 @@ export type Database = {
           file_url: string | null
           id: string
           is_encrypted: boolean | null
+          is_pinned: boolean | null
           message_key_encrypted: string | null
           message_type: string
           nonce: string | null
+          reply_to_message_id: string | null
           room_id: string
           user_id: string
         }
@@ -70,9 +104,11 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_encrypted?: boolean | null
+          is_pinned?: boolean | null
           message_key_encrypted?: string | null
           message_type?: string
           nonce?: string | null
+          reply_to_message_id?: string | null
           room_id: string
           user_id: string
         }
@@ -88,13 +124,22 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_encrypted?: boolean | null
+          is_pinned?: boolean | null
           message_key_encrypted?: string | null
           message_type?: string
           nonce?: string | null
+          reply_to_message_id?: string | null
           room_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_room_id_fkey"
             columns: ["room_id"]

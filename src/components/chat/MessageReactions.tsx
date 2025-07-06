@@ -46,14 +46,18 @@ export const MessageReactions = ({ messageId, currentUserId }: MessageReactionsP
   }, [messageId]);
 
   const fetchReactions = async () => {
-    const { data, error } = await supabase
-      .from('message_reactions')
-      .select('*')
-      .eq('message_id', messageId)
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('message_reactions')
+        .select('*')
+        .eq('message_id', messageId)
+        .order('created_at', { ascending: true });
 
-    if (data && !error) {
-      setReactions(data);
+      if (data && !error) {
+        setReactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching reactions:', error);
     }
   };
 

@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FileAttachment } from "./FileAttachment";
@@ -59,10 +60,21 @@ export const MessageItem = ({
   const [showReactions, setShowReactions] = useState(false);
   const [reactionPosition, setReactionPosition] = useState({ x: 0, y: 0 });
   const [isPinned, setIsPinned] = useState(message.is_pinned || false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
   const { toast } = useToast();
   const longPressTimer = useRef<NodeJS.Timeout>();
   const messageRef = useRef<HTMLDivElement>(null);
   
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getCurrentUser();
+  }, []);
+
   useEffect(() => {
     const decryptMessage = async () => {
       if (message.is_encrypted && message.nonce) {
@@ -138,13 +150,15 @@ export const MessageItem = ({
   };
 
   const handleReaction = async (emoji: string) => {
+    if (!currentUserId) return;
+    
     try {
       // Check if user already reacted with this emoji
       const { data: existingReaction } = await supabase
         .from('message_reactions')
         .select('id')
         .eq('message_id', message.id)
-        .eq('user_id', message.user_id) // This should be current user id
+        .eq('user_id', currentUserId)
         .eq('emoji', emoji)
         .single();
 
@@ -160,7 +174,7 @@ export const MessageItem = ({
           .from('message_reactions')
           .insert({
             message_id: message.id,
-            user_id: message.user_id, // This should be current user id
+            user_id: currentUserId,
             emoji: emoji,
           });
 
@@ -300,7 +314,9 @@ export const MessageItem = ({
             <FileAttachment message={message} />
           </div>
 
-          <MessageReactions messageId={message.id} currentUserId={message.user_id} />
+          {currentUserId && (
+            <MessageReactions messageId={message.id} currentUserId={currentUserId} />
+          )}
           
           <div className={`flex items-center gap-1 mt-1 px-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
             <span className="text-xs text-gray-400">
