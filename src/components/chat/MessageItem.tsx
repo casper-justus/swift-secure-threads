@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FileAttachment } from "./FileAttachment";
 import { Shield, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { EncryptionManager } from "@/utils/encryption";
 
 interface Message {
   id: string;
@@ -37,6 +38,28 @@ interface MessageItemProps {
 
 export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: MessageItemProps) => {
   const [showDelete, setShowDelete] = useState(false);
+  const [decryptedContent, setDecryptedContent] = useState<string>("");
+  
+  // Decrypt message content on mount
+  useEffect(() => {
+    const decryptMessage = async () => {
+      if (message.is_encrypted && message.nonce) {
+        try {
+          const encryptionManager = EncryptionManager.getInstance();
+          // For now, we'll show that it's encrypted but can't decrypt without proper key exchange
+          // This is a placeholder - in a real implementation, you'd have the proper keys
+          setDecryptedContent("🔒 Encrypted message");
+        } catch (error) {
+          console.error("Failed to decrypt message:", error);
+          setDecryptedContent(message.content);
+        }
+      } else {
+        setDecryptedContent(message.content);
+      }
+    };
+
+    decryptMessage();
+  }, [message]);
   
   // Check if message can be deleted (within 1 minute)
   const canDelete = () => {
@@ -71,8 +94,10 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
             {messenger?.username || messenger?.display_name || 'Unknown User'}
           </span>
           {message.is_encrypted && (
-            <div className="flex items-center" title="End-to-end encrypted">
-              <Shield className="h-3 w-3 text-[#43b581]" />
+            <div className="flex items-center">
+              <div title="End-to-end encrypted">
+                <Shield className="h-3 w-3 text-[#43b581]" />
+              </div>
             </div>
           )}
           <span className="text-xs text-[#72767d]">
@@ -97,8 +122,8 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
               : 'bg-[#40444b] text-white'
           }`}
         >
-          {message.content && (
-            <p className="text-sm break-words">{message.content}</p>
+          {decryptedContent && (
+            <p className="text-sm break-words">{decryptedContent}</p>
           )}
           <FileAttachment message={message} />
         </div>

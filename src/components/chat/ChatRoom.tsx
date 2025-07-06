@@ -5,7 +5,6 @@ import { MessageInput } from "./MessageInput";
 import { MessageList } from "./MessageList";
 import { Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { EncryptionManager } from "@/utils/encryption";
 
 interface ChatRoom {
   id: string;
@@ -146,29 +145,13 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
     fileSize: number;
   }) => {
     try {
-      const encryptionManager = EncryptionManager.getInstance();
       let messageData: any = {
         room_id: room.id,
         user_id: userId,
         content: content || `Shared ${fileData?.fileName}`,
         message_type: fileData ? "file" : "text",
-        is_encrypted: false,
+        is_encrypted: false, // Disabling encryption for now until proper key exchange is implemented
       };
-
-      // Try to encrypt the message
-      try {
-        const messageKey = await encryptionManager.generateMessageKey();
-        const encrypted = await encryptionManager.encryptMessage(content, messageKey);
-        
-        messageData = {
-          ...messageData,
-          content: encrypted.encrypted,
-          nonce: encrypted.nonce,
-          is_encrypted: true,
-        };
-      } catch (encError) {
-        console.warn("Encryption failed, sending unencrypted:", encError);
-      }
 
       if (fileData) {
         messageData.file_url = fileData.fileUrl;
