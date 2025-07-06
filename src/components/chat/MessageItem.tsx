@@ -1,7 +1,9 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { FileAttachment } from "./FileAttachment";
-import { Shield } from "lucide-react";
+import { Shield, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 interface Message {
   id: string;
@@ -30,11 +32,30 @@ interface MessageItemProps {
   message: Message;
   messenger: Messenger | undefined;
   isOwnMessage: boolean;
+  onDelete: (messageId: string) => void;
 }
 
-export const MessageItem = ({ message, messenger, isOwnMessage }: MessageItemProps) => {
+export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: MessageItemProps) => {
+  const [showDelete, setShowDelete] = useState(false);
+  
+  // Check if message can be deleted (within 1 minute)
+  const canDelete = () => {
+    const messageTime = new Date(message.created_at).getTime();
+    const now = new Date().getTime();
+    const oneMinute = 60 * 1000;
+    return (now - messageTime) < oneMinute && isOwnMessage;
+  };
+
+  const handleDelete = () => {
+    onDelete(message.id);
+  };
+
   return (
-    <div className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+    <div 
+      className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''} group`}
+      onMouseEnter={() => setShowDelete(true)}
+      onMouseLeave={() => setShowDelete(false)}
+    >
       <Avatar className="h-8 w-8 flex-shrink-0">
         <AvatarImage src={messenger?.avatar_url || ""} />
         <AvatarFallback className="bg-[#5865f2] text-white text-xs">
@@ -57,6 +78,16 @@ export const MessageItem = ({ message, messenger, isOwnMessage }: MessageItemPro
           <span className="text-xs text-[#72767d]">
             {new Date(message.created_at).toLocaleTimeString()}
           </span>
+          {canDelete() && showDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              className="h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
         </div>
         
         <div

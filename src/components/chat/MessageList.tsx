@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageItem } from "./MessageItem";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
   id: string;
@@ -30,9 +31,10 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   loading: boolean;
+  onDeleteMessage: (messageId: string) => void;
 }
 
-export const MessageList = ({ messages, currentUserId, loading }: MessageListProps) => {
+export const MessageList = ({ messages, currentUserId, loading, onDeleteMessage }: MessageListProps) => {
   const [messengers, setMessengers] = useState<Record<string, Messenger>>({});
 
   useEffect(() => {
@@ -66,27 +68,30 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#36393f] min-h-0">
-      {messages.map((message) => {
-        const messenger = messengers[message.user_id];
-        const isOwnMessage = message.user_id === currentUserId;
+    <ScrollArea className="flex-1 bg-[#36393f] min-h-0">
+      <div className="p-4 space-y-4">
+        {messages.map((message) => {
+          const messenger = messengers[message.user_id];
+          const isOwnMessage = message.user_id === currentUserId;
+          
+          return (
+            <MessageItem
+              key={message.id}
+              message={message}
+              messenger={messenger}
+              isOwnMessage={isOwnMessage}
+              onDelete={onDeleteMessage}
+            />
+          );
+        })}
         
-        return (
-          <MessageItem
-            key={message.id}
-            message={message}
-            messenger={messenger}
-            isOwnMessage={isOwnMessage}
-          />
-        );
-      })}
-      
-      {messages.length === 0 && (
-        <div className="text-center text-[#72767d] py-8">
-          <p>No messages yet</p>
-          <p className="text-sm">Start the conversation!</p>
-        </div>
-      )}
-    </div>
+        {messages.length === 0 && (
+          <div className="text-center text-[#72767d] py-8">
+            <p>No messages yet</p>
+            <p className="text-sm">Start the conversation!</p>
+          </div>
+        )}
+      </div>
+    </ScrollArea>
   );
 };

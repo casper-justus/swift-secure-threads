@@ -61,6 +61,19 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
           setMessages(prev => [...prev, newMessage]);
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `room_id=eq.${room.id}`,
+        },
+        (payload) => {
+          const deletedMessage = payload.old as Message;
+          setMessages(prev => prev.filter(msg => msg.id !== deletedMessage.id));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -94,6 +107,36 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", messageId)
+        .eq("user_id", userId); // Only allow deleting own messages
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete message",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Message deleted",
+          description: "Your message has been deleted",
+        });
+      }
+    } catch (error) {
+      console.error("Delete message error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete message",
+        variant: "destructive",
+      });
+    }
   };
 
   const sendMessage = async (content: string, fileData?: {
@@ -176,6 +219,7 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
           messages={messages} 
           currentUserId={userId} 
           loading={loading}
+          onDeleteMessage={deleteMessage}
         />
         <div ref={messagesEndRef} />
       </div>
