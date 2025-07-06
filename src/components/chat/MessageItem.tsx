@@ -63,7 +63,8 @@ export const MessageItem = ({
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const { toast } = useToast();
   const longPressTimer = useRef<NodeJS.Timeout>();
-  const messageRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null); // Ref for the whole message item row
+  const messageBubbleRef = useRef<HTMLDivElement>(null); // Ref for the actual message bubble
 
   // Effect to synchronize local isPinned state with message prop
   useEffect(() => {
@@ -195,12 +196,22 @@ export const MessageItem = ({
   };
 
   const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const rect = messageRef.current?.getBoundingClientRect();
-    if (rect) {
+    // Use messageBubbleRef for more precise positioning relative to the content
+    const bubbleRect = messageBubbleRef.current?.getBoundingClientRect();
+    if (bubbleRect) {
       setReactionPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top,
+        x: bubbleRect.left + bubbleRect.width / 2, // Horizontal center of the bubble
+        y: bubbleRect.top,                        // Top of the bubble
       });
+    } else {
+      // Fallback to messageRef if bubbleRef isn't available yet (though it should be)
+      const rowRect = messageRef.current?.getBoundingClientRect();
+      if (rowRect) {
+        setReactionPosition({
+          x: rowRect.left + rowRect.width / 2,
+          y: rowRect.top,
+        });
+      }
     }
     
     longPressTimer.current = setTimeout(() => {
@@ -293,6 +304,7 @@ export const MessageItem = ({
           )}
 
           <div
+            ref={messageBubbleRef} // Attach ref to the message bubble
             className={`inline-block rounded-2xl px-3 py-2 md:px-4 md:py-3 break-words ${
               isOwnMessage
                 ? 'bg-[#5865f2] text-white rounded-br-md'
