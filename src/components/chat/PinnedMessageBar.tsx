@@ -66,7 +66,7 @@ export const PinnedMessageBar = ({
   const latestPinnedMessage = pinnedMessages.length > 0 ? pinnedMessages[0] : null; // Ensure pinnedMessages is not empty
 
   return (
-    <div className="p-2 bg-[#2f3136] border-b border-[#202225] text-sm text-white ml-12 md:ml-0"> {/* Adjusted ml for consistency with ChatRoom */}
+    <div className="flex-shrink-0 p-2 bg-[#2f3136] border-b border-[#202225] text-sm text-white ml-12 md:ml-0"> {/* Added flex-shrink-0 */}
       <div
         className="flex items-center justify-between cursor-pointer hover:bg-[#3a3e45] p-1 rounded transition-colors duration-150"
         onClick={() => setIsExpanded(!isExpanded)}

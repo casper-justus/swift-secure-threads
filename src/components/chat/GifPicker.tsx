@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Image, Search, Loader2 } from "lucide-react";
+import { Clapperboard, Search, Loader2 } from "lucide-react"; // Changed Image to Clapperboard
 import { useToast } from "@/hooks/use-toast";
 
 // Giphy API Key - Replace with environment variable in a real app
@@ -129,7 +129,7 @@ export const GifPicker = ({ onGifSelect }: GifPickerProps) => {
           className="text-[#b9bbbe] hover:text-white hover:bg-[#4f545c] p-2"
           onClick={() => !isOpen && fetchGifs("")} // Fetch trending when opening if not already open
         >
-          <Image className="h-5 w-5" />
+          <Clapperboard className="h-5 w-5" /> {/* Changed Image to Clapperboard */}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3 bg-[#36393f] border-[#202225]" side="top">

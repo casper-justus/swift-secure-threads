@@ -25,56 +25,19 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   const [isUploadingPastedFile, setIsUploadingPastedFile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const initialViewportHeight = useRef(window.innerHeight);
+  // const initialViewportHeight = useRef(window.innerHeight); // Will be handled by parent/global viewport logic
   const { toast } = useToast();
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      // Increased max height from 120px to 160px (10rem)
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
     }
   }, [message]);
 
-  // Handle mobile keyboard detection and positioning
-  useEffect(() => {
-    const handleResize = () => {
-      const currentHeight = window.innerHeight;
-      const heightDifference = initialViewportHeight.current - currentHeight;
-      
-      // If height decreased by more than 150px, keyboard is likely open
-      if (heightDifference > 150) {
-        setIsKeyboardOpen(true);
-        // Position input above keyboard
-        if (containerRef.current) {
-          containerRef.current.style.position = 'fixed';
-          containerRef.current.style.bottom = `${heightDifference - 100}px`;
-          containerRef.current.style.left = '0';
-          containerRef.current.style.right = '0';
-          containerRef.current.style.zIndex = '1000';
-          containerRef.current.style.backgroundColor = '#36393f';
-        }
-      } else {
-        setIsKeyboardOpen(false);
-        // Reset to normal position
-        if (containerRef.current) {
-          containerRef.current.style.position = 'relative';
-          containerRef.current.style.bottom = 'auto';
-          containerRef.current.style.left = 'auto';
-          containerRef.current.style.right = 'auto';
-          containerRef.current.style.zIndex = 'auto';
-        }
-      }
-    };
-
-    // Use visualViewport if available (better for mobile)
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
-      return () => window.visualViewport?.removeEventListener('resize', handleResize);
-    } else {
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
-  }, []);
+  // Removed the previous useEffect hook for manual keyboard handling (fixed positioning)
+  // New keyboard handling will be managed by overall page structure and visualViewport listener at a higher level or via CSS.
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,10 +150,8 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
 
   return (
     <div 
-      ref={containerRef}
-      className={`p-3 md:p-4 border-t border-[#202225] bg-[#36393f] transition-all duration-200 ${
-        isKeyboardOpen ? 'shadow-lg' : ''
-      }`}
+      ref={containerRef} // Keep ref for other potential uses, but not fixed positioning
+      className="p-3 md:p-4 border-t border-[#202225] bg-[#36393f]" // Removed transition-all and isKeyboardOpen shadow here
     >
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
         <div className="flex-1 bg-[#40444b] rounded-2xl border border-[#202225] overflow-hidden">
@@ -207,7 +168,8 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
               onKeyPress={handleKeyPress}
               onPaste={handlePaste} // Added paste handler
               placeholder="Type a message..."
-              className="flex-1 border-0 bg-transparent text-white placeholder:text-[#72767d] focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-[40px] max-h-[120px] py-2 px-2"
+              // Increased max-h from max-h-[120px] (implicit via JS) to max-h-40 (10rem = 160px)
+              className="flex-1 border-0 bg-transparent text-white placeholder:text-[#72767d] focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-[40px] max-h-40 py-2 px-2"
               rows={1}
               disabled={isUploadingPastedFile} // Disable input while uploading pasted file
             />

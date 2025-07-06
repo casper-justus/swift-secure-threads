@@ -19,7 +19,7 @@ export const EmojiReactions = ({ onReaction, show, onClose, position }: EmojiRea
       setVisible(true);
     } else {
       // Start fade-out animation, then hide
-      const timer = setTimeout(() => setVisible(false), 200); // Duration of scale/opacity animation
+      const timer = setTimeout(() => setVisible(false), 300); // Increased duration
       return () => clearTimeout(timer);
     }
   }, [show]);
@@ -61,7 +61,7 @@ export const EmojiReactions = ({ onReaction, show, onClose, position }: EmojiRea
   // Add 'emoji-reactions' class for the global click listener in ChatRoom.tsx to identify this component
   return (
     <div
-      className={`emoji-reactions fixed z-50 bg-[#36393f] border border-[#202225] rounded-full p-2 shadow-lg transition-all duration-200 ${
+      className={`emoji-reactions fixed z-50 bg-[#36393f] border border-[#202225] rounded-full p-2 shadow-lg transition-all duration-300 ${ // Increased duration
         show ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'
       }`}
       style={{
