@@ -14,9 +14,10 @@ interface Reaction {
 interface MessageReactionsProps {
   messageId: string;
   currentUserId: string;
+  isOwnMessage?: boolean; // Added isOwnMessage prop
 }
 
-export const MessageReactions = ({ messageId, currentUserId }: MessageReactionsProps) => {
+export const MessageReactions = ({ messageId, currentUserId, isOwnMessage = false }: MessageReactionsProps) => {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const { toast } = useToast();
 
@@ -111,7 +112,7 @@ export const MessageReactions = ({ messageId, currentUserId }: MessageReactionsP
   }
 
   return (
-    <div className="flex flex-wrap gap-1 mt-1">
+    <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
       {Object.entries(groupedReactions).map(([emoji, reactionList]) => {
         const isUserReacted = reactionList.some(r => r.user_id === currentUserId);
         const count = reactionList.length;

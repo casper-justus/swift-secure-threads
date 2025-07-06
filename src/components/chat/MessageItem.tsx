@@ -320,7 +320,11 @@ export const MessageItem = ({
           </div>
 
           {currentUserId && (
-            <MessageReactions messageId={message.id} currentUserId={currentUserId} />
+            <MessageReactions
+              messageId={message.id}
+              currentUserId={currentUserId}
+              isOwnMessage={isOwnMessage} // Pass isOwnMessage prop
+            />
           )}
           
           <div className={`flex items-center gap-1 mt-1 px-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
