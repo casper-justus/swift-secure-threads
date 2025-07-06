@@ -114,7 +114,7 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         .from("messages")
         .delete()
         .eq("id", messageId)
-        .eq("user_id", userId); // Only allow deleting own messages
+        .eq("user_id", userId);
       
       if (error) {
         toast({
@@ -150,7 +150,7 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         user_id: userId,
         content: content || `Shared ${fileData?.fileName}`,
         message_type: fileData ? "file" : "text",
-        is_encrypted: false, // Disabling encryption for now until proper key exchange is implemented
+        is_encrypted: false,
       };
 
       if (fileData) {
@@ -183,21 +183,21 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
 
   return (
     <div className="h-full flex flex-col bg-[#36393f] min-h-0">
-      {/* Room Header */}
-      <div className="p-4 border-b border-[#202225] bg-[#36393f] flex-shrink-0">
+      {/* Room Header - Mobile optimized */}
+      <div className="p-3 md:p-4 border-b border-[#202225] bg-[#36393f] flex-shrink-0 ml-16 md:ml-0">
         <div className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-[#5865f2]" />
+          <Lock className="h-4 w-4 md:h-5 md:w-5 text-[#5865f2]" />
           <div>
-            <h2 className="text-lg font-semibold text-white">{room.name}</h2>
+            <h2 className="text-base md:text-lg font-semibold text-white">{room.name}</h2>
             {room.description && (
-              <p className="text-sm text-[#b9bbbe]">{room.description}</p>
+              <p className="text-xs md:text-sm text-[#b9bbbe]">{room.description}</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 flex flex-col min-h-0">
+      {/* Messages - Mobile optimized */}
+      <div className="flex-1 flex flex-col min-h-0 ml-16 md:ml-0">
         <MessageList 
           messages={messages} 
           currentUserId={userId} 
@@ -207,8 +207,8 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="flex-shrink-0">
+      {/* Message Input - Mobile optimized */}
+      <div className="flex-shrink-0 ml-16 md:ml-0">
         <MessageInput onSendMessage={sendMessage} />
       </div>
     </div>

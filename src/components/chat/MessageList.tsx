@@ -69,7 +69,7 @@ export const MessageList = ({ messages, currentUserId, loading, onDeleteMessage 
 
   return (
     <ScrollArea className="flex-1 bg-[#36393f] min-h-0">
-      <div className="p-4">
+      <div className="p-2 md:p-4 pb-20">
         {messages.map((message) => {
           const messenger = messengers[message.user_id];
           const isOwnMessage = message.user_id === currentUserId;
