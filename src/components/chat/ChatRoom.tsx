@@ -183,8 +183,8 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
 
   return (
     <div className="h-full flex flex-col bg-[#36393f] min-h-0">
-      {/* Room Header - Mobile optimized */}
-      <div className="p-3 md:p-4 border-b border-[#202225] bg-[#36393f] flex-shrink-0 ml-16 md:ml-0">
+      {/* Room Header - Mobile optimized with left margin for avatar */}
+      <div className="p-3 md:p-4 border-b border-[#202225] bg-[#36393f] flex-shrink-0 ml-12 md:ml-0">
         <div className="flex items-center gap-2">
           <Lock className="h-4 w-4 md:h-5 md:w-5 text-[#5865f2]" />
           <div>
@@ -196,8 +196,8 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         </div>
       </div>
 
-      {/* Messages - Mobile optimized */}
-      <div className="flex-1 flex flex-col min-h-0 ml-16 md:ml-0">
+      {/* Messages - Mobile optimized with left margin for avatar */}
+      <div className="flex-1 flex flex-col min-h-0 ml-12 md:ml-0">
         <MessageList 
           messages={messages} 
           currentUserId={userId} 
@@ -207,8 +207,8 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input - Mobile optimized */}
-      <div className="flex-shrink-0 ml-16 md:ml-0">
+      {/* Message Input - Mobile optimized with left margin for avatar */}
+      <div className="flex-shrink-0 ml-12 md:ml-0">
         <MessageInput onSendMessage={sendMessage} />
       </div>
     </div>

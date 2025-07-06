@@ -55,12 +55,19 @@ export const CollapsibleSidebar = ({
 
   return (
     <>
-      {/* Mobile Toggle Button - Fixed position */}
+      {/* Mobile Avatar Toggle Button - Fixed at top-left */}
       <Button
         onClick={toggleMobile}
-        className="md:hidden fixed top-4 left-4 z-50 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded-full w-12 h-12 p-0"
+        className="md:hidden fixed top-2 left-2 z-50 bg-transparent hover:bg-black/20 text-white rounded-full w-8 h-8 p-0 border-0"
       >
-        <Plus className="h-5 w-5" />
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={messenger?.avatar_url || ""} />
+          <AvatarFallback className="bg-[#5865f2] text-white text-xs">
+            {messenger?.display_name?.charAt(0)?.toUpperCase() || 
+             messenger?.username?.charAt(0)?.toUpperCase() || 
+             userEmail?.charAt(0)?.toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
       </Button>
 
       {/* Mobile Overlay */}
