@@ -59,11 +59,16 @@ export const MessageItem = ({
   const [decryptedContent, setDecryptedContent] = useState<string>("");
   const [showReactions, setShowReactions] = useState(false);
   const [reactionPosition, setReactionPosition] = useState({ x: 0, y: 0 });
-  const [isPinned, setIsPinned] = useState(message.is_pinned || false);
+  const [isPinned, setIsPinned] = useState(false); // Initial value set by useEffect below
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const { toast } = useToast();
   const longPressTimer = useRef<NodeJS.Timeout>();
   const messageRef = useRef<HTMLDivElement>(null);
+
+  // Effect to synchronize local isPinned state with message prop
+  useEffect(() => {
+    setIsPinned(message.is_pinned || false);
+  }, [message.is_pinned]);
   
   useEffect(() => {
     const getCurrentUser = async () => {
