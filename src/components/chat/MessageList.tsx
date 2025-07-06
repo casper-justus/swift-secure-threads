@@ -108,14 +108,14 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
         )}
         
         {!isImage && !isVideo && !isAudio && (
-          <div className="bg-white/10 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-[#2f3136] rounded-lg p-3 flex items-center gap-3 border border-[#202225]">
             {getFileIcon(message.file_type)}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
                 {message.file_name}
               </p>
               {message.file_size && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[#b9bbbe]">
                   {formatFileSize(message.file_size)}
                 </p>
               )}
@@ -124,7 +124,7 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
               size="sm"
               variant="ghost"
               onClick={() => window.open(message.file_url, '_blank')}
-              className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+              className="text-[#5865f2] hover:text-[#4752c4] hover:bg-[#5865f2]/10"
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -136,14 +136,14 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+      <div className="flex items-center justify-center h-full bg-[#36393f]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5865f2]"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#36393f]">
       {messages.map((message) => {
         const profile = userProfiles[message.user_id];
         const isOwnMessage = message.user_id === currentUserId;
@@ -155,7 +155,7 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
           >
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarImage src={profile?.avatar_url || ""} />
-              <AvatarFallback className="bg-purple-600 text-white text-xs">
+              <AvatarFallback className="bg-[#5865f2] text-white text-xs">
                 {profile?.name?.charAt(0)?.toUpperCase() || 
                  profile?.username?.charAt(0)?.toUpperCase() || 
                  '?'}
@@ -167,7 +167,7 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
                 <span className="text-sm font-medium text-white">
                   {profile?.username || profile?.name || 'Unknown User'}
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-[#72767d]">
                   {new Date(message.created_at).toLocaleTimeString()}
                 </span>
               </div>
@@ -175,8 +175,8 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
               <div
                 className={`inline-block max-w-md rounded-lg px-3 py-2 ${
                   isOwnMessage
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white/10 text-white'
+                    ? 'bg-[#5865f2] text-white'
+                    : 'bg-[#40444b] text-white'
                 }`}
               >
                 {message.content && (
@@ -190,7 +190,7 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
       })}
       
       {messages.length === 0 && (
-        <div className="text-center text-gray-400 py-8">
+        <div className="text-center text-[#72767d] py-8">
           <p>No messages yet</p>
           <p className="text-sm">Start the conversation!</p>
         </div>

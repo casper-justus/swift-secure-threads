@@ -52,7 +52,7 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
         .eq("id", session.user.id)
         .single();
 
-      if (error && status !== 406) { // 406 can mean single() found no rows, which is fine if profile is new
+      if (error && status !== 406) {
         console.error("Error fetching profile:", error.message);
         toast({
           title: "Error Fetching Profile",
@@ -60,7 +60,7 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
           variant: "destructive",
         });
       } else if (data) {
-        setUserProfile(data as UserProfile); // Cast to UserProfile type
+        setUserProfile(data as UserProfile);
       }
     } catch (error: any) {
       console.error("Unexpected error fetching profile:", error.message);
@@ -121,15 +121,15 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   };
 
   return (
-    <div className="h-screen flex">
+    <div className="h-screen flex bg-[#36393f]">
       {/* Sidebar */}
-      <div className="w-80 bg-black/30 border-r border-purple-500/20 flex flex-col">
-        <div className="p-4 border-b border-purple-500/20">
+      <div className="w-80 bg-[#2f3136] border-r border-[#202225] flex flex-col">
+        <div className="p-4 border-b border-[#202225]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={userProfile?.avatar_url || ""} />
-                <AvatarFallback className="bg-purple-600 text-white">
+                <AvatarFallback className="bg-[#5865f2] text-white">
                   {userProfile?.name?.charAt(0)?.toUpperCase() || 
                    userProfile?.username?.charAt(0)?.toUpperCase() || 
                    session.user.email?.charAt(0)?.toUpperCase()}
@@ -139,14 +139,14 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
                 <h1 className="text-lg font-bold text-white">
                   {userProfile?.username || userProfile?.name || "User"}
                 </h1>
-                <p className="text-xs text-gray-400">{session.user?.email}</p>
+                <p className="text-xs text-[#b9bbbe]">{session.user?.email}</p>
               </div>
             </div>
             <Button
               size="sm"
               variant="ghost"
               onClick={handleSignOut}
-              className="text-gray-300 hover:text-white hover:bg-white/5"
+              className="text-[#b9bbbe] hover:text-white hover:bg-[#4f545c]"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -154,7 +154,7 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
           <Button
             size="sm"
             onClick={() => setShowCreateRoom(true)}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+            className="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white"
           >
             <Plus className="h-4 w-4 mr-1" />
             <span>New Room</span>
@@ -173,17 +173,17 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
       {/* Main Content Area */}
       <div className="flex-1">
         <Tabs defaultValue="chat" className="h-full flex flex-col">
-          <div className="border-b border-purple-500/20 bg-black/20">
+          <div className="border-b border-[#202225] bg-[#36393f]">
             <TabsList className="bg-transparent border-none">
               <TabsTrigger 
                 value="chat"
-                className="data-[state=active]:bg-purple-600/20 data-[state=active]:text-purple-300 text-gray-400"
+                className="data-[state=active]:bg-[#5865f2]/20 data-[state=active]:text-[#5865f2] text-[#b9bbbe] hover:text-white"
               >
                 Chat
               </TabsTrigger>
               <TabsTrigger 
                 value="profile"
-                className="data-[state=active]:bg-purple-600/20 data-[state=active]:text-purple-300 text-gray-400"
+                className="data-[state=active]:bg-[#5865f2]/20 data-[state=active]:text-[#5865f2] text-[#b9bbbe] hover:text-white"
               >
                 Profile
               </TabsTrigger>
@@ -194,16 +194,16 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
             {selectedRoom ? (
               <ChatRoom room={selectedRoom} userId={session.user.id} />
             ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center text-gray-400">
-                  <h2 className="text-2xl font-semibold mb-2">Select a room to start chatting</h2>
+              <div className="h-full flex items-center justify-center bg-[#36393f]">
+                <div className="text-center text-[#b9bbbe]">
+                  <h2 className="text-2xl font-semibold mb-2 text-white">Select a room to start chatting</h2>
                   <p>Choose a room from the sidebar or create a new one</p>
                 </div>
               </div>
             )}
           </TabsContent>
           
-          <TabsContent value="profile" className="flex-1 m-0 overflow-y-auto">
+          <TabsContent value="profile" className="flex-1 m-0 overflow-y-auto bg-[#36393f]">
             <UserProfile session={session} />
           </TabsContent>
         </Tabs>

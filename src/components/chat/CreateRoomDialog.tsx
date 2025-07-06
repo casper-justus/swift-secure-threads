@@ -87,10 +87,10 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-black/90 border-purple-500/20">
+      <DialogContent className="bg-[#36393f] border-[#202225]">
         <DialogHeader>
           <DialogTitle className="text-white">Create New Room</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#b9bbbe]">
             Create a private encrypted room for secure conversations.
           </DialogDescription>
         </DialogHeader>
@@ -103,7 +103,7 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter room name"
               required
-              className="bg-white/10 border-purple-500/30 text-white placeholder:text-gray-400"
+              className="bg-[#40444b] border-[#202225] text-white placeholder:text-[#72767d] focus:border-[#5865f2]"
             />
           </div>
           <div>
@@ -113,7 +113,7 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of the room"
-              className="bg-white/10 border-purple-500/30 text-white placeholder:text-gray-400"
+              className="bg-[#40444b] border-[#202225] text-white placeholder:text-[#72767d] focus:border-[#5865f2]"
             />
           </div>
           <div className="flex items-center space-x-2">
@@ -129,14 +129,14 @@ export const CreateRoomDialog = ({ open, onOpenChange, onRoomCreated, userId }: 
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1 border-purple-500/30 text-white hover:bg-white/5"
+              className="flex-1 border-[#202225] text-white hover:bg-[#4f545c] bg-transparent"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              className="flex-1 bg-[#5865f2] hover:bg-[#4752c4] text-white"
             >
               {loading ? "Creating..." : "Create Room"}
             </Button>

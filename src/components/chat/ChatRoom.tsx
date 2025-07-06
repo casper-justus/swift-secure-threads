@@ -127,15 +127,15 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-[#36393f]">
       {/* Room Header */}
-      <div className="p-4 border-b border-purple-500/20 bg-black/20">
+      <div className="p-4 border-b border-[#202225] bg-[#36393f]">
         <div className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-purple-400" />
+          <Lock className="h-5 w-5 text-[#5865f2]" />
           <div>
             <h2 className="text-lg font-semibold text-white">{room.name}</h2>
             {room.description && (
-              <p className="text-sm text-gray-400">{room.description}</p>
+              <p className="text-sm text-[#b9bbbe]">{room.description}</p>
             )}
           </div>
         </div>
