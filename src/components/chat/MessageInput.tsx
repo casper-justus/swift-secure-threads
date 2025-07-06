@@ -5,7 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileUpload } from "./FileUpload";
 import { EmojiPicker } from "./EmojiPicker";
 import { GifPicker } from "./GifPicker";
-import { Send, Mic } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client"; // For Supabase storage
+import { useToast } from "@/hooks/use-toast"; // For toasts
+import { Send, Mic, Loader2 } from "lucide-react";
 
 interface MessageInputProps {
   onSendMessage: (content: string, fileData?: {
@@ -20,9 +22,11 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isUploadingPastedFile, setIsUploadingPastedFile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const initialViewportHeight = useRef(window.innerHeight);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -109,13 +113,76 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
     }
   };
 
-  const handleGifSelect = (gifUrl: string) => {
-    // For now, send GIF URL as text message
-    onSendMessage(`GIF: ${gifUrl}`);
+  const handleGifSelect = (gifUrl: string, gifData?: any) => {
+    // Send GIF as a special file type
+    // gifData might contain more info like original source or dimensions, if needed later.
+    // For now, we just need the URL.
+    // We use a convention for fileName, and explicitly set fileType to 'image/gif'.
+    // FileSize is unknown from Giphy search results directly, so 0 is a placeholder.
+    const fileName = gifData?.title || `animated-${Date.now()}.gif`;
+    onSendMessage("", {
+      fileUrl: gifUrl,
+      fileName: fileName,
+      fileType: "image/gif",
+      fileSize: 0
+    });
   };
 
   const handleFileUploaded = (fileUrl: string, fileName: string, fileType: string, fileSize: number) => {
     onSendMessage("", { fileUrl, fileName, fileType, fileSize });
+  };
+
+  const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = event.clipboardData.items;
+    let imageFile: File | null = null;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        imageFile = items[i].getAsFile();
+        break;
+      }
+    }
+
+    if (imageFile) {
+      event.preventDefault(); // Prevent pasting image data as text
+      setIsUploadingPastedFile(true);
+      toast({ title: "Pasted image detected", description: "Uploading..." });
+
+      try {
+        const fileExt = imageFile.name.split('.').pop() || 'png'; // Default to png if no extension
+        const fileName = `pasted-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `chat-files/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('chat-files')
+          .upload(filePath, imageFile, {
+            contentType: imageFile.type // Pass content type for better handling
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('chat-files')
+          .getPublicUrl(filePath);
+
+        handleFileUploaded(
+          urlData.publicUrl,
+          imageFile.name || fileName, // Use original name if available, else generated
+          imageFile.type,
+          imageFile.size
+        );
+        toast({ title: "Image pasted and uploaded successfully!" });
+      } catch (error: any) {
+        console.error("Pasted image upload error:", error);
+        toast({
+          title: "Pasted Image Upload Error",
+          description: error.message || "Could not upload the pasted image.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploadingPastedFile(false);
+      }
+    }
   };
 
   return (
@@ -138,14 +205,24 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
               value={message}
               onChange={handleChange}
               onKeyPress={handleKeyPress}
+              onPaste={handlePaste} // Added paste handler
               placeholder="Type a message..."
               className="flex-1 border-0 bg-transparent text-white placeholder:text-[#72767d] focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-[40px] max-h-[120px] py-2 px-2"
               rows={1}
+              disabled={isUploadingPastedFile} // Disable input while uploading pasted file
             />
           </div>
         </div>
         
-        {message.trim() ? (
+        {isUploadingPastedFile ? (
+          <Button
+            type="button"
+            disabled
+            className="bg-purple-600 text-white rounded-full w-10 h-10 p-0 flex-shrink-0"
+          >
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </Button>
+        ) : message.trim() ? (
           <Button
             type="submit"
             className="bg-[#5865f2] hover:bg-[#4752c4] text-white rounded-full w-10 h-10 p-0 flex-shrink-0"
