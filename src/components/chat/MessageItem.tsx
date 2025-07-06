@@ -50,7 +50,9 @@ export const MessageItem = ({ message, messenger, isOwnMessage }: MessageItemPro
             {messenger?.username || messenger?.display_name || 'Unknown User'}
           </span>
           {message.is_encrypted && (
-            <Shield className="h-3 w-3 text-[#43b581]" title="End-to-end encrypted" />
+            <div className="flex items-center" title="End-to-end encrypted">
+              <Shield className="h-3 w-3 text-[#43b581]" />
+            </div>
           )}
           <span className="text-xs text-[#72767d]">
             {new Date(message.created_at).toLocaleTimeString()}
