@@ -84,6 +84,21 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
     scrollToBottom();
   }, [messages]);
 
+  // Handle global clicks to close emoji reactions
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      // This will be handled by the EmojiReactions component
+      if (!(e.target as Element).closest('.emoji-reactions')) {
+        // Close any open emoji reactions
+        const event = new CustomEvent('closeEmojiReactions');
+        window.dispatchEvent(event);
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   const fetchMessages = async () => {
     setLoading(true);
     const { data, error } = await supabase

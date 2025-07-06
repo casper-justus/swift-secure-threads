@@ -19,7 +19,10 @@ interface MessageInputProps {
 export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const initialViewportHeight = useRef(window.innerHeight);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -27,6 +30,47 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
     }
   }, [message]);
+
+  // Handle mobile keyboard detection and positioning
+  useEffect(() => {
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+      const heightDifference = initialViewportHeight.current - currentHeight;
+      
+      // If height decreased by more than 150px, keyboard is likely open
+      if (heightDifference > 150) {
+        setIsKeyboardOpen(true);
+        // Position input above keyboard
+        if (containerRef.current) {
+          containerRef.current.style.position = 'fixed';
+          containerRef.current.style.bottom = `${heightDifference - 100}px`;
+          containerRef.current.style.left = '0';
+          containerRef.current.style.right = '0';
+          containerRef.current.style.zIndex = '1000';
+          containerRef.current.style.backgroundColor = '#36393f';
+        }
+      } else {
+        setIsKeyboardOpen(false);
+        // Reset to normal position
+        if (containerRef.current) {
+          containerRef.current.style.position = 'relative';
+          containerRef.current.style.bottom = 'auto';
+          containerRef.current.style.left = 'auto';
+          containerRef.current.style.right = 'auto';
+          containerRef.current.style.zIndex = 'auto';
+        }
+      }
+    };
+
+    // Use visualViewport if available (better for mobile)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +119,12 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   };
 
   return (
-    <div className="p-3 md:p-4 border-t border-[#202225] bg-[#36393f]">
+    <div 
+      ref={containerRef}
+      className={`p-3 md:p-4 border-t border-[#202225] bg-[#36393f] transition-all duration-200 ${
+        isKeyboardOpen ? 'shadow-lg' : ''
+      }`}
+    >
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
         <div className="flex-1 bg-[#40444b] rounded-2xl border border-[#202225] overflow-hidden">
           <div className="flex items-end">
