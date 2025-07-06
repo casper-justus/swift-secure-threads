@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageItem } from "./MessageItem";
@@ -17,6 +16,8 @@ interface Message {
   file_size?: number;
   is_encrypted?: boolean;
   nonce?: string;
+  is_pinned?: boolean;
+  reply_to_message_id?: string;
 }
 
 interface Messenger {
@@ -32,9 +33,18 @@ interface MessageListProps {
   currentUserId: string;
   loading: boolean;
   onDeleteMessage: (messageId: string) => void;
+  onReply?: (message: Message) => void;
+  onForward?: (message: Message) => void;
 }
 
-export const MessageList = ({ messages, currentUserId, loading, onDeleteMessage }: MessageListProps) => {
+export const MessageList = ({ 
+  messages, 
+  currentUserId, 
+  loading, 
+  onDeleteMessage,
+  onReply,
+  onForward 
+}: MessageListProps) => {
   const [messengers, setMessengers] = useState<Record<string, Messenger>>({});
 
   useEffect(() => {
@@ -73,6 +83,9 @@ export const MessageList = ({ messages, currentUserId, loading, onDeleteMessage 
         {messages.map((message) => {
           const messenger = messengers[message.user_id];
           const isOwnMessage = message.user_id === currentUserId;
+          const replyToMessage = message.reply_to_message_id 
+            ? messages.find(m => m.id === message.reply_to_message_id)
+            : null;
           
           return (
             <MessageItem
@@ -81,6 +94,9 @@ export const MessageList = ({ messages, currentUserId, loading, onDeleteMessage 
               messenger={messenger}
               isOwnMessage={isOwnMessage}
               onDelete={onDeleteMessage}
+              onReply={onReply}
+              onForward={onForward}
+              replyToMessage={replyToMessage}
             />
           );
         })}

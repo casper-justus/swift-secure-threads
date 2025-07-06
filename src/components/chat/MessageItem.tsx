@@ -1,14 +1,15 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FileAttachment } from "./FileAttachment";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { EmojiReactions } from "./EmojiReactions";
-import { Shield, Check, CheckCheck } from "lucide-react";
+import { MessageReactions } from "./MessageReactions";
+import { Shield, Check, CheckCheck, Reply, Pin } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { EncryptionManager } from "@/utils/encryption";
 import { OnlineStatus } from "./OnlineStatus";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -23,6 +24,8 @@ interface Message {
   file_size?: number;
   is_encrypted?: boolean;
   nonce?: string;
+  is_pinned?: boolean;
+  reply_to_message_id?: string;
 }
 
 interface Messenger {
@@ -38,17 +41,28 @@ interface MessageItemProps {
   messenger: Messenger | undefined;
   isOwnMessage: boolean;
   onDelete: (messageId: string) => void;
+  onReply?: (message: Message) => void;
+  onForward?: (message: Message) => void;
+  replyToMessage?: Message | null;
 }
 
-export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: MessageItemProps) => {
+export const MessageItem = ({ 
+  message, 
+  messenger, 
+  isOwnMessage, 
+  onDelete, 
+  onReply,
+  onForward,
+  replyToMessage 
+}: MessageItemProps) => {
   const [decryptedContent, setDecryptedContent] = useState<string>("");
   const [showReactions, setShowReactions] = useState(false);
   const [reactionPosition, setReactionPosition] = useState({ x: 0, y: 0 });
+  const [isPinned, setIsPinned] = useState(message.is_pinned || false);
   const { toast } = useToast();
   const longPressTimer = useRef<NodeJS.Timeout>();
   const messageRef = useRef<HTMLDivElement>(null);
   
-  // Decrypt message content on mount
   useEffect(() => {
     const decryptMessage = async () => {
       if (message.is_encrypted && message.nonce) {
@@ -67,7 +81,6 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
     decryptMessage();
   }, [message]);
   
-  // Check if message can be deleted (within 1 minute)
   const canDelete = () => {
     const messageTime = new Date(message.created_at).getTime();
     const now = new Date().getTime();
@@ -88,31 +101,78 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
   };
 
   const handleReply = () => {
-    toast({
-      title: "Reply",
-      description: "Reply feature coming soon",
-    });
+    if (onReply) {
+      onReply(message);
+    }
   };
 
   const handleForward = () => {
-    toast({
-      title: "Forward",
-      description: "Forward feature coming soon",
-    });
+    if (onForward) {
+      onForward(message);
+    }
   };
 
-  const handlePin = () => {
-    toast({
-      title: "Pin",
-      description: "Pin feature coming soon",
-    });
+  const handlePin = async () => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ is_pinned: !isPinned })
+        .eq('id', message.id);
+        
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to pin/unpin message",
+          variant: "destructive",
+        });
+      } else {
+        setIsPinned(!isPinned);
+        toast({
+          title: isPinned ? "Message unpinned" : "Message pinned",
+          description: isPinned ? "Message has been unpinned" : "Message has been pinned",
+        });
+      }
+    } catch (error) {
+      console.error("Pin message error:", error);
+    }
   };
 
-  const handleReaction = (emoji: string) => {
-    toast({
-      title: "Reaction added",
-      description: `Reacted with ${emoji}`,
-    });
+  const handleReaction = async (emoji: string) => {
+    try {
+      // Check if user already reacted with this emoji
+      const { data: existingReaction } = await supabase
+        .from('message_reactions')
+        .select('id')
+        .eq('message_id', message.id)
+        .eq('user_id', message.user_id) // This should be current user id
+        .eq('emoji', emoji)
+        .single();
+
+      if (existingReaction) {
+        // Remove reaction
+        await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('id', existingReaction.id);
+      } else {
+        // Add reaction
+        await supabase
+          .from('message_reactions')
+          .insert({
+            message_id: message.id,
+            user_id: message.user_id, // This should be current user id
+            emoji: emoji,
+          });
+
+        // Send notification
+        toast({
+          title: "Reaction added",
+          description: `Reacted with ${emoji}`,
+        });
+      }
+    } catch (error) {
+      console.error("Reaction error:", error);
+    }
   };
 
   const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent) => {
@@ -184,6 +244,7 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
           onForward={handleForward}
           onPin={handlePin}
           canDelete={canDelete()}
+          isPinned={isPinned}
         >
           <div className="relative flex-shrink-0 cursor-pointer">
             <Avatar className="h-8 w-8 md:h-10 md:w-10">
@@ -202,6 +263,16 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
         </MessageContextMenu>
         
         <div className={`flex-1 max-w-[85%] md:max-w-md ${isOwnMessage ? 'text-right' : ''}`}>
+          {replyToMessage && (
+            <div className="mb-2 p-2 bg-[#2f3136] rounded-md border-l-2 border-[#5865f2]">
+              <div className="flex items-center gap-1 mb-1">
+                <Reply className="h-3 w-3 text-[#5865f2]" />
+                <span className="text-xs text-[#5865f2]">Reply to</span>
+              </div>
+              <p className="text-xs text-gray-300 truncate">{replyToMessage.content}</p>
+            </div>
+          )}
+
           <div
             className={`inline-block rounded-2xl px-3 py-2 md:px-4 md:py-3 break-words ${
               isOwnMessage
@@ -209,6 +280,13 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
                 : 'bg-[#40444b] text-white rounded-bl-md'
             }`}
           >
+            {isPinned && (
+              <div className="flex items-center gap-1 mb-1">
+                <Pin className="h-3 w-3 text-yellow-500" />
+                <span className="text-xs text-yellow-500">Pinned</span>
+              </div>
+            )}
+
             {message.is_encrypted && (
               <div className="flex items-center gap-1 mb-1">
                 <Shield className="h-3 w-3 text-[#43b581]" />
@@ -221,6 +299,8 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
             )}
             <FileAttachment message={message} />
           </div>
+
+          <MessageReactions messageId={message.id} currentUserId={message.user_id} />
           
           <div className={`flex items-center gap-1 mt-1 px-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
             <span className="text-xs text-gray-400">

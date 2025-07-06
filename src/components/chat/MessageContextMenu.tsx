@@ -15,6 +15,7 @@ interface MessageContextMenuProps {
   onForward: () => void;
   onPin: () => void;
   canDelete: boolean;
+  isPinned?: boolean;
 }
 
 export const MessageContextMenu = ({
@@ -25,6 +26,7 @@ export const MessageContextMenu = ({
   onForward,
   onPin,
   canDelete,
+  isPinned = false,
 }: MessageContextMenuProps) => {
   return (
     <ContextMenu>
@@ -46,7 +48,7 @@ export const MessageContextMenu = ({
         </ContextMenuItem>
         <ContextMenuItem onClick={onPin} className="text-white hover:bg-[#4f545c]">
           <Pin className="h-4 w-4 mr-2" />
-          Pin
+          {isPinned ? 'Unpin' : 'Pin'}
         </ContextMenuItem>
         {canDelete && (
           <ContextMenuItem onClick={onDelete} className="text-red-400 hover:bg-red-500/20">

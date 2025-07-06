@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageInput } from "./MessageInput";
 import { MessageList } from "./MessageList";
-import { Lock } from "lucide-react";
+import { Lock, X, Reply, Forward } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface ChatRoom {
   id: string;
@@ -28,6 +28,8 @@ interface Message {
   file_size?: number;
   is_encrypted?: boolean;
   nonce?: string;
+  is_pinned?: boolean;
+  reply_to_message_id?: string;
 }
 
 interface ChatRoomProps {
@@ -38,6 +40,8 @@ interface ChatRoomProps {
 export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -153,6 +157,19 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
     }
   };
 
+  const handleReply = (message: Message) => {
+    setReplyingTo(message);
+  };
+
+  const handleForward = (message: Message) => {
+    setForwardingMessage(message);
+    // You can implement a room selection dialog here
+    toast({
+      title: "Forward message",
+      description: "Forward functionality will be implemented with room selection",
+    });
+  };
+
   const sendMessage = async (content: string, fileData?: {
     fileUrl: string;
     fileName: string;
@@ -167,6 +184,11 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         message_type: fileData ? "file" : "text",
         is_encrypted: false,
       };
+
+      // Add reply reference if replying
+      if (replyingTo) {
+        messageData.reply_to_message_id = replyingTo.id;
+      }
 
       if (fileData) {
         messageData.file_url = fileData.fileUrl;
@@ -185,6 +207,9 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
           description: "Failed to send message",
           variant: "destructive",
         });
+      } else {
+        // Clear reply state after sending
+        setReplyingTo(null);
       }
     } catch (error) {
       console.error("Message sending error:", error);
@@ -218,9 +243,30 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
           currentUserId={userId} 
           loading={loading}
           onDeleteMessage={deleteMessage}
+          onReply={handleReply}
+          onForward={handleForward}
         />
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Reply preview */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 p-2 bg-[#2f3136] border-t border-[#202225] ml-12 md:ml-0">
+          <Reply className="h-4 w-4 text-[#5865f2]" />
+          <div className="flex-1">
+            <p className="text-xs text-[#5865f2]">Replying to</p>
+            <p className="text-sm text-white truncate">{replyingTo.content}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setReplyingTo(null)}
+            className="text-gray-400 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Message Input - Mobile optimized with left margin for avatar */}
       <div className="flex-shrink-0 ml-12 md:ml-0">
