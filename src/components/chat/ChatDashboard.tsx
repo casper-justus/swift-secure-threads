@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -157,6 +156,44 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
     setLoading(false);
   };
 
+  const handleRoomSelect = (room: ChatRoom) => {
+    setActiveRoomId(room.id);
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chat_rooms")
+        .delete()
+        .eq("id", roomId)
+        .eq("created_by", session.user.id);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete room",
+          variant: "destructive",
+        });
+      } else {
+        setRooms(prev => prev.filter(room => room.id !== roomId));
+        if (activeRoomId === roomId) {
+          setActiveRoomId(null);
+        }
+        toast({
+          title: "Room deleted",
+          description: "The room has been deleted",
+        });
+      }
+    } catch (error) {
+      console.error("Delete room error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete room",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleRoomCreated = (newRoom: ChatRoom) => {
     setRooms(prev => [newRoom, ...prev]);
     setActiveRoomId(newRoom.id);
@@ -172,6 +209,7 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   };
 
   const activeRoom = rooms.find(room => room.id === activeRoomId);
+  const selectedRoom = activeRoom || null;
 
   return (
     <div className="h-screen flex bg-[#36393f] overflow-hidden">
@@ -183,9 +221,10 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
       >
         <RoomList 
           rooms={rooms}
-          activeRoomId={activeRoomId}
-          onRoomSelect={setActiveRoomId}
-          loading={loading}
+          selectedRoom={selectedRoom}
+          onRoomSelect={handleRoomSelect}
+          onDeleteRoom={handleDeleteRoom}
+          currentUserId={session.user.id}
         />
       </Sidebar>
       
