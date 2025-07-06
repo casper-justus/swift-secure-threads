@@ -26,6 +26,7 @@ interface Messenger {
   avatar_url: string | null;
   public_key: string | null;
   status: string | null;
+  last_seen: string | null;
 }
 
 interface ChatDashboardProps {
@@ -44,7 +45,98 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
     initializeUser();
     fetchRooms();
     fetchMessenger();
+    setupPushNotifications();
+    updateUserStatus('online');
+    
+    // Update status to offline when page is closed
+    const handleBeforeUnload = () => {
+      updateUserStatus('offline');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Set up periodic status updates
+    const statusInterval = setInterval(() => {
+      updateUserStatus('online');
+    }, 30000); // Update every 30 seconds
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      clearInterval(statusInterval);
+      updateUserStatus('offline');
+    };
   }, [session.user.id]);
+
+  const setupPushNotifications = async () => {
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Push notifications enabled');
+          
+          // Listen for new messages to show notifications
+          const channel = supabase
+            .channel('notifications')
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+              },
+              (payload) => {
+                const message = payload.new;
+                // Only show notification if message is not from current user
+                if (message.user_id !== session.user.id) {
+                  showNotification(message);
+                }
+              }
+            )
+            .subscribe();
+            
+          return () => {
+            supabase.removeChannel(channel);
+          };
+        }
+      } catch (error) {
+        console.error('Error setting up push notifications:', error);
+      }
+    }
+  };
+
+  const showNotification = async (message: any) => {
+    try {
+      // Get messenger info for the notification
+      const { data: senderMessenger } = await supabase
+        .from("messengers")
+        .select("display_name, username")
+        .eq("user_id", message.user_id)
+        .single();
+
+      const senderName = senderMessenger?.display_name || senderMessenger?.username || 'Someone';
+      
+      new Notification(`New message from ${senderName}`, {
+        body: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : ''),
+        icon: '/placeholder.svg',
+      });
+    } catch (error) {
+      console.error('Error showing notification:', error);
+    }
+  };
+
+  const updateUserStatus = async (status: 'online' | 'offline') => {
+    try {
+      await supabase
+        .from("messengers")
+        .update({
+          status: status,
+          last_seen: new Date().toISOString()
+        })
+        .eq("user_id", session.user.id);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+    }
+  };
 
   const fetchMessenger = async () => {
     try {
@@ -85,6 +177,7 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
             display_name: session.user.user_metadata?.full_name || 
                          session.user.user_metadata?.name,
             avatar_url: session.user.user_metadata?.avatar_url,
+            status: 'online'
           });
 
         if (messengerError) {
@@ -194,13 +287,14 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
     }
   };
 
-  const handleRoomCreated = (newRoom: ChatRoom) => {
-    setRooms(prev => [newRoom, ...prev]);
-    setActiveRoomId(newRoom.id);
+  const handleRoomCreated = () => {
+    // Refresh rooms list after creation
+    fetchRooms();
     setShowCreateDialog(false);
   };
 
   const handleSignOut = async () => {
+    await updateUserStatus('offline');
     await supabase.auth.signOut();
   };
 

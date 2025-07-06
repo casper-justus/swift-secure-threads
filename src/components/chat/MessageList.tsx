@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageItem } from "./MessageItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { OnlineStatus } from "./OnlineStatus";
 
 interface Message {
   id: string;
@@ -75,13 +76,34 @@ export const MessageList = ({ messages, currentUserId, loading, onDeleteMessage 
           const isOwnMessage = message.user_id === currentUserId;
           
           return (
-            <MessageItem
-              key={message.id}
-              message={message}
-              messenger={messenger}
-              isOwnMessage={isOwnMessage}
-              onDelete={onDeleteMessage}
-            />
+            <div key={message.id} className="group">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-[#5865f2] flex items-center justify-center text-white text-sm font-medium">
+                    {messenger?.display_name?.charAt(0)?.toUpperCase() || 
+                     messenger?.username?.charAt(0)?.toUpperCase() || 
+                     'U'}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-white">
+                      {messenger?.display_name || messenger?.username || 'Unknown User'}
+                    </span>
+                    <OnlineStatus userId={message.user_id} />
+                    <span className="text-xs text-[#72767d]">
+                      {new Date(message.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <MessageItem
+                    message={message}
+                    messenger={messenger}
+                    isOwnMessage={isOwnMessage}
+                    onDelete={onDeleteMessage}
+                  />
+                </div>
+              </div>
+            </div>
           );
         })}
         
