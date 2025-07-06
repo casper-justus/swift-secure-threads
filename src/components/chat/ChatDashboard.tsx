@@ -9,6 +9,7 @@ import { UserProfile } from "../profile/UserProfile";
 import { Sidebar } from "./Sidebar";
 import { ChatTabs } from "./ChatTabs";
 import { useToast } from "@/hooks/use-toast";
+import { EncryptionManager } from "@/utils/encryption";
 
 interface ChatRoom {
   id: string;
@@ -19,11 +20,14 @@ interface ChatRoom {
   is_private: boolean;
 }
 
-interface UserProfile {
+interface Messenger {
   id: string;
-  name: string | null;
+  user_id: string;
   username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
+  public_key: string | null;
+  status: string | null;
 }
 
 interface ChatDashboardProps {
@@ -34,29 +38,48 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [messenger, setMessenger] = useState<Messenger | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchRooms();
-    fetchUserProfile();
+    fetchMessenger();
+    initializeEncryption();
   }, []);
 
-  const fetchUserProfile = async () => {
+  const initializeEncryption = async () => {
+    const encryptionManager = EncryptionManager.getInstance();
     try {
-      const { data, error, status } = await supabase
-        .from("profiles")
-        .select("id, name, username, avatar_url")
-        .eq("id", session.user.id)
+      const keyPair = await encryptionManager.generateKeyPair();
+      const publicKeyString = await encryptionManager.exportPublicKey(keyPair.publicKey);
+      
+      // Update messenger with public key
+      await supabase
+        .from("messengers")
+        .update({ public_key: publicKeyString })
+        .eq("user_id", session.user.id);
+      
+      encryptionManager.setKeyPair(keyPair);
+    } catch (error) {
+      console.error("Encryption initialization failed:", error);
+    }
+  };
+
+  const fetchMessenger = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("messengers")
+        .select("*")
+        .eq("user_id", session.user.id)
         .single();
 
-      if (error && status !== 406) {
-        console.error("Error fetching profile:", error.message);
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching messenger:", error);
       } else if (data) {
-        setUserProfile(data as UserProfile);
+        setMessenger(data as Messenger);
       }
     } catch (error: any) {
-      console.error("Unexpected error fetching profile:", error.message);
+      console.error("Unexpected error fetching messenger:", error);
     }
   };
 
@@ -109,9 +132,9 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   };
 
   return (
-    <div className="h-screen flex bg-[#36393f]">
+    <div className="h-screen flex bg-[#36393f] overflow-hidden">
       <Sidebar
-        userProfile={userProfile}
+        messenger={messenger}
         userEmail={session.user?.email || ""}
         onSignOut={handleSignOut}
         onCreateRoom={() => setShowCreateRoom(true)}
@@ -125,7 +148,7 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
         />
       </Sidebar>
 
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col min-h-0">
         <ChatTabs
           profileTab={<UserProfile session={session} />}
         >

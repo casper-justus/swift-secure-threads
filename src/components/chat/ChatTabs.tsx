@@ -8,8 +8,8 @@ interface ChatTabsProps {
 
 export const ChatTabs = ({ children, profileTab }: ChatTabsProps) => {
   return (
-    <Tabs defaultValue="chat" className="h-full flex flex-col">
-      <div className="border-b border-[#202225] bg-[#36393f]">
+    <Tabs defaultValue="chat" className="h-full flex flex-col min-h-0">
+      <div className="border-b border-[#202225] bg-[#36393f] flex-shrink-0">
         <TabsList className="bg-transparent border-none">
           <TabsTrigger 
             value="chat"
@@ -26,11 +26,11 @@ export const ChatTabs = ({ children, profileTab }: ChatTabsProps) => {
         </TabsList>
       </div>
       
-      <TabsContent value="chat" className="flex-1 m-0">
+      <TabsContent value="chat" className="flex-1 m-0 min-h-0">
         {children}
       </TabsContent>
       
-      <TabsContent value="profile" className="flex-1 m-0 overflow-y-auto bg-[#36393f]">
+      <TabsContent value="profile" className="flex-1 m-0 overflow-y-auto bg-[#36393f] min-h-0">
         {profileTab}
       </TabsContent>
     </Tabs>

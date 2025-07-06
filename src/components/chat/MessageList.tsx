@@ -14,12 +14,15 @@ interface Message {
   file_name?: string;
   file_type?: string;
   file_size?: number;
+  is_encrypted?: boolean;
+  nonce?: string;
 }
 
-interface UserProfile {
+interface Messenger {
   id: string;
-  name: string | null;
+  user_id: string;
   username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
 }
 
@@ -30,27 +33,27 @@ interface MessageListProps {
 }
 
 export const MessageList = ({ messages, currentUserId, loading }: MessageListProps) => {
-  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+  const [messengers, setMessengers] = useState<Record<string, Messenger>>({});
 
   useEffect(() => {
     const userIds = [...new Set(messages.map(msg => msg.user_id))];
-    fetchUserProfiles(userIds);
+    fetchMessengers(userIds);
   }, [messages]);
 
-  const fetchUserProfiles = async (userIds: string[]) => {
+  const fetchMessengers = async (userIds: string[]) => {
     if (userIds.length === 0) return;
 
     const { data, error } = await supabase
-      .from("profiles")
+      .from("messengers")
       .select("*")
-      .in("id", userIds);
+      .in("user_id", userIds);
 
     if (data && !error) {
-      const profilesMap = data.reduce((acc, profile) => {
-        acc[profile.id] = profile;
+      const messengersMap = data.reduce((acc, messenger) => {
+        acc[messenger.user_id] = messenger;
         return acc;
-      }, {} as Record<string, UserProfile>);
-      setUserProfiles(profilesMap);
+      }, {} as Record<string, Messenger>);
+      setMessengers(messengersMap);
     }
   };
 
@@ -63,16 +66,16 @@ export const MessageList = ({ messages, currentUserId, loading }: MessageListPro
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#36393f]">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#36393f] min-h-0">
       {messages.map((message) => {
-        const profile = userProfiles[message.user_id];
+        const messenger = messengers[message.user_id];
         const isOwnMessage = message.user_id === currentUserId;
         
         return (
           <MessageItem
             key={message.id}
             message={message}
-            profile={profile}
+            messenger={messenger}
             isOwnMessage={isOwnMessage}
           />
         );

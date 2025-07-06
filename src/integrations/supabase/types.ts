@@ -51,7 +51,10 @@ export type Database = {
           file_type: string | null
           file_url: string | null
           id: string
+          is_encrypted: boolean | null
+          message_key_encrypted: string | null
           message_type: string
+          nonce: string | null
           room_id: string
           user_id: string
         }
@@ -66,7 +69,10 @@ export type Database = {
           file_type?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean | null
+          message_key_encrypted?: string | null
           message_type?: string
+          nonce?: string | null
           room_id: string
           user_id: string
         }
@@ -81,7 +87,10 @@ export type Database = {
           file_type?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean | null
+          message_key_encrypted?: string | null
           message_type?: string
+          nonce?: string | null
           room_id?: string
           user_id?: string
         }
@@ -94,6 +103,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messengers: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          key_salt: string | null
+          last_seen: string | null
+          private_key_encrypted: string | null
+          public_key: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          key_salt?: string | null
+          last_seen?: string | null
+          private_key_encrypted?: string | null
+          public_key?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          key_salt?: string | null
+          last_seen?: string | null
+          private_key_encrypted?: string | null
+          public_key?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
       }
       playlist_songs: {
         Row: {

@@ -5,6 +5,7 @@ import { MessageInput } from "./MessageInput";
 import { MessageList } from "./MessageList";
 import { Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { EncryptionManager } from "@/utils/encryption";
 
 interface ChatRoom {
   id: string;
@@ -26,6 +27,8 @@ interface Message {
   file_name?: string;
   file_type?: string;
   file_size?: number;
+  is_encrypted?: boolean;
+  nonce?: string;
 }
 
 interface ChatRoomProps {
@@ -99,25 +102,51 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
     fileType: string;
     fileSize: number;
   }) => {
-    const messageData: any = {
-      room_id: room.id,
-      user_id: userId,
-      content: content || `Shared ${fileData?.fileName}`,
-      message_type: fileData ? "file" : "text",
-    };
+    try {
+      const encryptionManager = EncryptionManager.getInstance();
+      let messageData: any = {
+        room_id: room.id,
+        user_id: userId,
+        content: content || `Shared ${fileData?.fileName}`,
+        message_type: fileData ? "file" : "text",
+        is_encrypted: false,
+      };
 
-    if (fileData) {
-      messageData.file_url = fileData.fileUrl;
-      messageData.file_name = fileData.fileName;
-      messageData.file_type = fileData.fileType;
-      messageData.file_size = fileData.fileSize;
-    }
+      // Try to encrypt the message
+      try {
+        const messageKey = await encryptionManager.generateMessageKey();
+        const encrypted = await encryptionManager.encryptMessage(content, messageKey);
+        
+        messageData = {
+          ...messageData,
+          content: encrypted.encrypted,
+          nonce: encrypted.nonce,
+          is_encrypted: true,
+        };
+      } catch (encError) {
+        console.warn("Encryption failed, sending unencrypted:", encError);
+      }
 
-    const { error } = await supabase
-      .from("messages")
-      .insert(messageData);
+      if (fileData) {
+        messageData.file_url = fileData.fileUrl;
+        messageData.file_name = fileData.fileName;
+        messageData.file_type = fileData.fileType;
+        messageData.file_size = fileData.fileSize;
+      }
 
-    if (error) {
+      const { error } = await supabase
+        .from("messages")
+        .insert(messageData);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to send message",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Message sending error:", error);
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -127,9 +156,9 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#36393f]">
+    <div className="h-full flex flex-col bg-[#36393f] min-h-0">
       {/* Room Header */}
-      <div className="p-4 border-b border-[#202225] bg-[#36393f]">
+      <div className="p-4 border-b border-[#202225] bg-[#36393f] flex-shrink-0">
         <div className="flex items-center gap-2">
           <Lock className="h-5 w-5 text-[#5865f2]" />
           <div>
@@ -142,7 +171,7 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <MessageList 
           messages={messages} 
           currentUserId={userId} 
@@ -152,7 +181,9 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
       </div>
 
       {/* Message Input */}
-      <MessageInput onSendMessage={sendMessage} />
+      <div className="flex-shrink-0">
+        <MessageInput onSendMessage={sendMessage} />
+      </div>
     </div>
   );
 };

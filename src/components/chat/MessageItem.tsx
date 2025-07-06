@@ -1,6 +1,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FileAttachment } from "./FileAttachment";
+import { Shield } from "lucide-react";
 
 interface Message {
   id: string;
@@ -13,29 +14,32 @@ interface Message {
   file_name?: string;
   file_type?: string;
   file_size?: number;
+  is_encrypted?: boolean;
+  nonce?: string;
 }
 
-interface UserProfile {
+interface Messenger {
   id: string;
-  name: string | null;
+  user_id: string;
   username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
 }
 
 interface MessageItemProps {
   message: Message;
-  profile: UserProfile | undefined;
+  messenger: Messenger | undefined;
   isOwnMessage: boolean;
 }
 
-export const MessageItem = ({ message, profile, isOwnMessage }: MessageItemProps) => {
+export const MessageItem = ({ message, messenger, isOwnMessage }: MessageItemProps) => {
   return (
     <div className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={profile?.avatar_url || ""} />
+        <AvatarImage src={messenger?.avatar_url || ""} />
         <AvatarFallback className="bg-[#5865f2] text-white text-xs">
-          {profile?.name?.charAt(0)?.toUpperCase() || 
-           profile?.username?.charAt(0)?.toUpperCase() || 
+          {messenger?.display_name?.charAt(0)?.toUpperCase() || 
+           messenger?.username?.charAt(0)?.toUpperCase() || 
            '?'}
         </AvatarFallback>
       </Avatar>
@@ -43,8 +47,11 @@ export const MessageItem = ({ message, profile, isOwnMessage }: MessageItemProps
       <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium text-white">
-            {profile?.username || profile?.name || 'Unknown User'}
+            {messenger?.username || messenger?.display_name || 'Unknown User'}
           </span>
+          {message.is_encrypted && (
+            <Shield className="h-3 w-3 text-[#43b581]" title="End-to-end encrypted" />
+          )}
           <span className="text-xs text-[#72767d]">
             {new Date(message.created_at).toLocaleTimeString()}
           </span>
