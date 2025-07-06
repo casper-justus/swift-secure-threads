@@ -253,7 +253,12 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   const selectedRoom = activeRoom || null;
 
   return (
-    <div className="h-screen flex bg-[#36393f] overflow-hidden">
+    // Changed h-screen to h-full to respect parent's dynamic height (from Index.tsx)
+    // This div itself is a flex row (sidebar + main content).
+    // If ChatDashboard were to have its own header *above* the sidebar/chat area row,
+    // then this div would need to be flex-col, and a new inner div would be the flex row.
+    // For now, assuming ChatDashboard's direct children are sidebar and chat content area.
+    <div className="h-full flex bg-[#36393f] overflow-hidden">
       <CollapsibleSidebar 
         messenger={messenger}
         userEmail={session.user.email || ""}

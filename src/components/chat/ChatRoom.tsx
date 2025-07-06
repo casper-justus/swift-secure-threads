@@ -383,8 +383,8 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
         currentUserId={userId}
       />
 
-      {/* Messages - Mobile optimized with left margin for avatar */}
-      <div className="flex-1 flex flex-col min-h-0 ml-12 md:ml-0"> {/* Consider if ml-12 is still needed with sidebar */}
+      {/* Message List container */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden ml-12 md:ml-0"> {/* Added overflow-hidden, ensure min-h-0 */}
         <MessageList
           messages={messages}
           currentUserId={userId}
@@ -399,7 +399,7 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
 
       {/* Reply preview */}
       {replyingTo && (
-        <div className="flex items-center gap-2 p-2 bg-[#2f3136] border-t border-[#202225] ml-12 md:ml-0">
+        <div className="flex-shrink-0 flex items-center gap-2 p-2 bg-[#2f3136] border-t border-[#202225] ml-12 md:ml-0"> {/* Added flex-shrink-0 */}
           <Reply className="h-4 w-4 text-[#5865f2]" />
           <div className="flex-1">
             <p className="text-xs text-[#5865f2]">Replying to</p>
