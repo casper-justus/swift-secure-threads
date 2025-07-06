@@ -4,12 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { ChatDashboard } from "@/components/chat/ChatDashboard";
-import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     // Get initial session
@@ -23,16 +21,10 @@ const Index = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) {
-        toast({
-          title: "Welcome!",
-          description: "Successfully signed in.",
-        });
-      }
     });
 
     return () => subscription.unsubscribe();
-  }, [toast]);
+  }, []);
 
   if (loading) {
     return (

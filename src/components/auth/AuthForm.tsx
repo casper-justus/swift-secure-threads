@@ -37,7 +37,6 @@ export const AuthForm = () => {
             description: passwordError,
             variant: "destructive",
           });
-          setLoading(false); // Ensure loading is set to false
           return;
         }
 
@@ -55,14 +54,13 @@ export const AuthForm = () => {
             description: error.message,
             variant: "destructive",
           });
-          throw error; // Re-throw to be caught by the generic catch block if needed, or handle specifically
+        } else {
+          setEmailSent(true);
+          toast({
+            title: "Check your email",
+            description: "We've sent you a confirmation link. You must confirm your email before you can sign in.",
+          });
         }
-        
-        setEmailSent(true);
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link. You must confirm your email before you can sign in.",
-        });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -74,20 +72,14 @@ export const AuthForm = () => {
             description: error.message,
             variant: "destructive",
           });
-          throw error; // Re-throw
         }
       }
     } catch (error: any) {
-      // Generic catch for unexpected errors, specific ones are handled above.
-      // Avoid showing duplicate toasts if already handled.
-      if (!toast.isActive(`toast-${isSignUp ? 'Sign Up Failed' : 'Sign In Failed'}-${error.message}`)) {
-        toast({
-          id: `toast-auth-error-${error.message}`,
-          title: isSignUp ? "Sign Up Error" : "Sign In Error",
-          description: error.message || "An unexpected error occurred.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: isSignUp ? "Sign Up Error" : "Sign In Error",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -116,15 +108,15 @@ export const AuthForm = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-black/50 border-purple-500/20 backdrop-blur-sm">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[#36393f]">
+        <Card className="w-full max-w-md bg-[#2f3136] border-[#40444b]">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <MessageSquare className="h-8 w-8 text-purple-400" />
-              <Lock className="h-6 w-6 text-purple-400" />
+              <MessageSquare className="h-8 w-8 text-[#5865f2]" />
+              <Lock className="h-6 w-6 text-[#5865f2]" />
             </div>
             <CardTitle className="text-2xl text-white">Check Your Email</CardTitle>
-            <CardDescription className="text-gray-300">
+            <CardDescription className="text-[#b9bbbe]">
               We've sent a confirmation link to {email}. Please check your email and click the link to verify your account before signing in.
             </CardDescription>
           </CardHeader>
@@ -134,7 +126,7 @@ export const AuthForm = () => {
                 setEmailSent(false);
                 setIsSignUp(false);
               }}
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white"
             >
               Back to Sign In
             </Button>
@@ -145,15 +137,15 @@ export const AuthForm = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-black/50 border-purple-500/20 backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#36393f]">
+      <Card className="w-full max-w-md bg-[#2f3136] border-[#40444b]">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <MessageSquare className="h-8 w-8 text-purple-400" />
-            <Lock className="h-6 w-6 text-purple-400" />
+            <MessageSquare className="h-8 w-8 text-[#5865f2]" />
+            <Lock className="h-6 w-6 text-[#5865f2]" />
           </div>
           <CardTitle className="text-2xl text-white">SecureChat</CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardDescription className="text-[#b9bbbe]">
             Private, encrypted messaging with email verification
           </CardDescription>
         </CardHeader>
@@ -163,7 +155,7 @@ export const AuthForm = () => {
               onClick={handleGoogleAuth}
               disabled={loading}
               variant="outline"
-              className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+              className="w-full border-[#40444b] text-[#b9bbbe] hover:bg-[#40444b] hover:text-white bg-transparent"
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -176,10 +168,10 @@ export const AuthForm = () => {
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-purple-500/20" />
+                <span className="w-full border-t border-[#40444b]" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-black/50 px-2 text-gray-400">Or continue with email</span>
+                <span className="bg-[#2f3136] px-2 text-[#72767d]">Or continue with email</span>
               </div>
             </div>
 
@@ -190,7 +182,7 @@ export const AuthForm = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-white/10 border-purple-500/30 text-white placeholder:text-gray-400"
+                className="bg-[#40444b] border-[#40444b] text-white placeholder:text-[#72767d]"
               />
               <div>
                 <Input
@@ -199,12 +191,12 @@ export const AuthForm = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-ring"
+                  className="bg-[#40444b] border-[#40444b] text-white placeholder:text-[#72767d]"
                 />
                 {isSignUp && (
-                  <div className="mt-2 text-xs text-muted-foreground/80 space-y-1 p-2 rounded-md bg-muted/50 border border-border">
-                    <p className="font-medium text-muted-foreground">Password requirements:</p>
-                    <ul className="list-disc list-inside space-y-0.5 text-muted-foreground/90">
+                  <div className="mt-2 text-xs text-[#72767d] space-y-1 p-2 rounded-md bg-[#40444b] border border-[#40444b]">
+                    <p className="font-medium text-[#b9bbbe]">Password requirements:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
                       <li>At least 8 characters</li>
                       <li>One uppercase letter (A-Z)</li>
                       <li>One lowercase letter (a-z)</li>
@@ -217,7 +209,7 @@ export const AuthForm = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                className="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white"
               >
                 {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
               </Button>
@@ -225,7 +217,7 @@ export const AuthForm = () => {
                 type="button"
                 variant="ghost"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="w-full text-purple-300 hover:text-white hover:bg-white/5"
+                className="w-full text-[#00a8fc] hover:text-white hover:bg-[#40444b]"
               >
                 {isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up"}
               </Button>
