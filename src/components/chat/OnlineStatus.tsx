@@ -60,16 +60,13 @@ export const OnlineStatus = ({ userId, className = "" }: OnlineStatusProps) => {
   const lastSeenTime = userStatus.last_seen ? new Date(userStatus.last_seen) : null;
   const isRecentlyActive = lastSeenTime && (Date.now() - lastSeenTime.getTime()) < 5 * 60 * 1000; // 5 minutes
 
+  const getStatusColor = () => {
+    if (isOnline) return 'bg-green-500';
+    if (isRecentlyActive) return 'bg-yellow-500';
+    return 'bg-gray-400';
+  };
+
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
-      <div 
-        className={`w-2 h-2 rounded-full ${
-          isOnline ? 'bg-green-500' : isRecentlyActive ? 'bg-yellow-500' : 'bg-gray-400'
-        }`}
-      />
-      <span className="text-xs text-[#b9bbbe]">
-        {isOnline ? 'Online' : isRecentlyActive ? 'Away' : 'Offline'}
-      </span>
-    </div>
+    <div className={`rounded-full ${getStatusColor()} ${className}`} />
   );
 };

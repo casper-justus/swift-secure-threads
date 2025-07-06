@@ -2,9 +2,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FileAttachment } from "./FileAttachment";
-import { Shield, Trash2 } from "lucide-react";
+import { Shield, Trash2, Check, CheckCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { EncryptionManager } from "@/utils/encryption";
+import { OnlineStatus } from "./OnlineStatus";
 
 interface Message {
   id: string;
@@ -46,8 +47,6 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
       if (message.is_encrypted && message.nonce) {
         try {
           const encryptionManager = EncryptionManager.getInstance();
-          // For now, we'll show that it's encrypted but can't decrypt without proper key exchange
-          // This is a placeholder - in a real implementation, you'd have the proper keys
           setDecryptedContent("🔒 Encrypted message");
         } catch (error) {
           console.error("Failed to decrypt message:", error);
@@ -73,60 +72,97 @@ export const MessageItem = ({ message, messenger, isOwnMessage, onDelete }: Mess
     onDelete(message.id);
   };
 
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
+
+  const getMessageStatus = () => {
+    // Simple status logic - in real app this would be based on actual read receipts
+    const messageAge = Date.now() - new Date(message.created_at).getTime();
+    if (messageAge < 1000) return 'sending';
+    if (messageAge < 5000) return 'sent';
+    return 'read';
+  };
+
+  const renderStatusIcon = () => {
+    if (!isOwnMessage) return null;
+    
+    const status = getMessageStatus();
+    switch (status) {
+      case 'sending':
+        return <div className="w-3 h-3 rounded-full bg-gray-400 animate-pulse" />;
+      case 'sent':
+        return <Check className="h-3 w-3 text-gray-400" />;
+      case 'read':
+        return <CheckCheck className="h-3 w-3 text-blue-400" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div 
-      className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''} group`}
+      className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''} group mb-4`}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
     >
-      <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={messenger?.avatar_url || ""} />
-        <AvatarFallback className="bg-[#5865f2] text-white text-xs">
-          {messenger?.display_name?.charAt(0)?.toUpperCase() || 
-           messenger?.username?.charAt(0)?.toUpperCase() || 
-           '?'}
-        </AvatarFallback>
-      </Avatar>
+      <div className="relative flex-shrink-0">
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={messenger?.avatar_url || ""} />
+          <AvatarFallback className="bg-[#5865f2] text-white text-xs">
+            {messenger?.display_name?.charAt(0)?.toUpperCase() || 
+             messenger?.username?.charAt(0)?.toUpperCase() || 
+             '?'}
+          </AvatarFallback>
+        </Avatar>
+        <OnlineStatus 
+          userId={message.user_id} 
+          className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#36393f]"
+        />
+      </div>
       
-      <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium text-white">
-            {messenger?.username || messenger?.display_name || 'Unknown User'}
-          </span>
-          {message.is_encrypted && (
-            <div className="flex items-center">
-              <div title="End-to-end encrypted">
-                <Shield className="h-3 w-3 text-[#43b581]" />
-              </div>
-            </div>
-          )}
-          <span className="text-xs text-[#72767d]">
-            {new Date(message.created_at).toLocaleTimeString()}
-          </span>
-          {canDelete() && showDelete && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              className="h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-        
+      <div className={`flex-1 max-w-md ${isOwnMessage ? 'text-right' : ''}`}>
         <div
-          className={`inline-block max-w-md rounded-lg px-3 py-2 ${
+          className={`inline-block rounded-lg px-3 py-2 ${
             isOwnMessage
               ? 'bg-[#5865f2] text-white'
               : 'bg-[#40444b] text-white'
           }`}
         >
+          {message.is_encrypted && (
+            <div className="flex items-center gap-1 mb-1">
+              <Shield className="h-3 w-3 text-[#43b581]" />
+              <span className="text-xs text-gray-300">Encrypted</span>
+            </div>
+          )}
+          
           {decryptedContent && (
             <p className="text-sm break-words">{decryptedContent}</p>
           )}
           <FileAttachment message={message} />
+          
+          <div className={`flex items-center gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+            <span className="text-xs text-gray-300 opacity-70">
+              {formatTime(message.created_at)}
+            </span>
+            {renderStatusIcon()}
+          </div>
         </div>
+        
+        {canDelete() && showDelete && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400 mt-1"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
       </div>
     </div>
   );

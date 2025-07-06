@@ -1,13 +1,13 @@
+
 import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar } from "./Sidebar";
+import { CollapsibleSidebar } from "./CollapsibleSidebar";
 import { ChatTabs } from "./ChatTabs";
 import { ChatRoom } from "./ChatRoom";
-import { RoomList } from "./RoomList";
 import { CreateRoomDialog } from "./CreateRoomDialog";
-import { UserProfile } from "../profile/UserProfile";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface ChatRoom {
   id: string;
@@ -41,11 +41,16 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { toast } = useToast();
 
+  // Use notifications hook
+  useNotifications({ 
+    currentUserId: session.user.id, 
+    currentRoomId: activeRoomId || undefined 
+  });
+
   useEffect(() => {
     initializeUser();
     fetchRooms();
     fetchMessenger();
-    setupPushNotifications();
     updateUserStatus('online');
     
     // Update status to offline when page is closed
@@ -66,63 +71,6 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
       updateUserStatus('offline');
     };
   }, [session.user.id]);
-
-  const setupPushNotifications = async () => {
-    if ('Notification' in window && 'serviceWorker' in navigator) {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          console.log('Push notifications enabled');
-          
-          // Listen for new messages to show notifications
-          const channel = supabase
-            .channel('notifications')
-            .on(
-              'postgres_changes',
-              {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-              },
-              (payload) => {
-                const message = payload.new;
-                // Only show notification if message is not from current user
-                if (message.user_id !== session.user.id) {
-                  showNotification(message);
-                }
-              }
-            )
-            .subscribe();
-            
-          return () => {
-            supabase.removeChannel(channel);
-          };
-        }
-      } catch (error) {
-        console.error('Error setting up push notifications:', error);
-      }
-    }
-  };
-
-  const showNotification = async (message: any) => {
-    try {
-      // Get messenger info for the notification
-      const { data: senderMessenger } = await supabase
-        .from("messengers")
-        .select("display_name, username")
-        .eq("user_id", message.user_id)
-        .single();
-
-      const senderName = senderMessenger?.display_name || senderMessenger?.username || 'Someone';
-      
-      new Notification(`New message from ${senderName}`, {
-        body: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : ''),
-        icon: '/placeholder.svg',
-      });
-    } catch (error) {
-      console.error('Error showing notification:', error);
-    }
-  };
 
   const updateUserStatus = async (status: 'online' | 'offline') => {
     try {
@@ -288,7 +236,6 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
   };
 
   const handleRoomCreated = () => {
-    // Refresh rooms list after creation
     fetchRooms();
     setShowCreateDialog(false);
   };
@@ -307,26 +254,21 @@ export const ChatDashboard = ({ session }: ChatDashboardProps) => {
 
   return (
     <div className="h-screen flex bg-[#36393f] overflow-hidden">
-      <Sidebar 
+      <CollapsibleSidebar 
         messenger={messenger}
         userEmail={session.user.email || ""}
         onSignOut={handleSignOut}
         onCreateRoom={handleCreateRoom}
-      >
-        <RoomList 
-          rooms={rooms}
-          selectedRoom={selectedRoom}
-          onRoomSelect={handleRoomSelect}
-          onDeleteRoom={handleDeleteRoom}
-          currentUserId={session.user.id}
-        />
-      </Sidebar>
+        rooms={rooms}
+        selectedRoom={selectedRoom}
+        onRoomSelect={handleRoomSelect}
+        onDeleteRoom={handleDeleteRoom}
+        currentUserId={session.user.id}
+      />
       
       <div className="flex-1 flex flex-col min-w-0">
         {activeRoom ? (
-          <ChatTabs 
-            profileTab={<UserProfile session={session} />}
-          >
+          <ChatTabs>
             <ChatRoom 
               room={activeRoom} 
               userId={session.user.id}
