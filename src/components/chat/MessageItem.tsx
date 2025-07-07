@@ -2,7 +2,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FileAttachment } from "./FileAttachment";
-import { MessageContextMenu } from "./MessageContextMenu";
+import { MessageAvatarActionsMenu } from "./MessageAvatarActionsMenu"; // Changed import
 import { EmojiReactions } from "./EmojiReactions";
 import { MessageReactions } from "./MessageReactions";
 import { Shield, Check, CheckCheck, Reply, Pin } from "lucide-react";
@@ -66,10 +66,71 @@ export const MessageItem = ({
   const messageRef = useRef<HTMLDivElement>(null); // Ref for the whole message item row
   const messageBubbleRef = useRef<HTMLDivElement>(null); // Ref for the actual message bubble
 
+  // Swipe to reply states
+  const touchStartXRef = useRef<number | null>(null);
+  const [currentSwipeX, setCurrentSwipeX] = useState(0);
+  const isSwipingRef = useRef(false);
+  const SWIPE_THRESHOLD = 60; // Pixels to trigger reply
+
   // Effect to synchronize local isPinned state with message prop
   useEffect(() => {
     setIsPinned(message.is_pinned || false);
   }, [message.is_pinned]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) { // Only single touch swipes
+      touchStartXRef.current = e.touches[0].clientX;
+      isSwipingRef.current = false;
+      // No setCurrentSwipeX(0) here, to allow quick interaction if already slightly swiped by mistake and released.
+      // Let onTouchEnd handle reset if not a valid swipe.
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || e.touches.length !== 1) {
+      return;
+    }
+
+    const currentX = e.touches[0].clientX;
+    let deltaX = currentX - touchStartXRef.current;
+
+    // Only interested in right swipes for reply
+    if (deltaX < 0) { // Swiping left or returned to origin from a right swipe
+      // If they were swiping right and pulled back left beyond origin, clamp to 0
+      setCurrentSwipeX(0);
+      isSwipingRef.current = false; // No longer a candidate for right-swipe reply
+      return;
+    }
+
+    isSwipingRef.current = true; // Mark as actively swiping (right)
+
+    // Prevent vertical scroll if horizontal swipe is significant enough
+    // This threshold should be small, e.g., 10px
+    if (deltaX > 10) {
+      // This can be aggressive. Test carefully. Some browsers might ignore this if listeners are passive.
+      // e.preventDefault();
+    }
+
+    // Allow some overswipe for visual feedback, cap it at SWIPE_THRESHOLD + some buffer
+    const maxSwipe = SWIPE_THRESHOLD + 40;
+    setCurrentSwipeX(Math.min(deltaX, maxSwipe));
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current === null) return; // No touch start recorded
+
+    if (isSwipingRef.current && currentSwipeX >= SWIPE_THRESHOLD) {
+      if (onReply) {
+        onReply(message);
+      }
+    }
+
+    // Reset swipe state regardless of action taken
+    // Animation back to 0 will be handled by CSS transition on currentSwipeX change
+    setCurrentSwipeX(0);
+    touchStartXRef.current = null;
+    isSwipingRef.current = false;
+  };
   
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -267,7 +328,8 @@ export const MessageItem = ({
         onMouseUp={handleLongPressEnd}
         onMouseLeave={handleLongPressEnd}
       >
-        <MessageContextMenu
+        {/* Use MessageAvatarActionsMenu for click/tap trigger on avatar */}
+        <MessageAvatarActionsMenu
           onDelete={handleDelete}
           onCopy={handleCopy}
           onReply={handleReply}
@@ -305,11 +367,17 @@ export const MessageItem = ({
 
           <div
             ref={messageBubbleRef} // Attach ref to the message bubble
-            className={`inline-block rounded-2xl px-3 py-2 md:px-4 md:py-3 break-words ${
+            className={`inline-block rounded-2xl px-3 py-2 md:px-4 md:py-3 break-words relative z-10 transition-transform duration-200 ease-out touch-action-pan-y ${ // Added transition and touch-action classes
               isOwnMessage
                 ? 'bg-[#5865f2] text-white rounded-br-md'
                 : 'bg-[#40444b] text-white rounded-bl-md'
             }`}
+            style={{
+              transform: `translateX(${currentSwipeX}px)`,
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             {isPinned && (
               <div className="flex items-center gap-1 mb-1">
