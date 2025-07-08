@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "443493083155",
+    "project_id": "logical-stacker-418217",
+    "storage_bucket": "logical-stacker-418217.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443493083155:android:4edda76ce1c3f2f70bb7e6",
+        "android_client_info": {
+          "package_name": "Ccom.justagi.dashboard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "443493083155-gvlr7ocleu25rd0f07vte7gl3vdierqk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFT0q9GpgA5r3XjcpehljV5_89y8bi3fw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "443493083155-gvlr7ocleu25rd0f07vte7gl3vdierqk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443493083155:android:645064c89634f7970bb7e6",
+        "android_client_info": {
+          "package_name": "com.kazpian.swiftsecurethreads"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "443493083155-gvlr7ocleu25rd0f07vte7gl3vdierqk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFT0q9GpgA5r3XjcpehljV5_89y8bi3fw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "443493083155-gvlr7ocleu25rd0f07vte7gl3vdierqk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
