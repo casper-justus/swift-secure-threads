@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react"; // Added useCallback
 import { supabase } from "@/integrations/supabase/client";
 import { MessageInput } from "./MessageInput";
 import { MessageList } from "./MessageList";
 import { PinnedMessageBar } from "./PinnedMessageBar";
-import { Lock, X, Reply, Forward, Pin as PinIcon } from "lucide-react"; // Renamed Pin to PinIcon to avoid conflict
+import { Lock, X, Reply, Forward, Pin as PinIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+
+const MESSAGES_PER_PAGE = 30;
 
 // Define Messenger interface if not centrally available
 interface Messenger {
@@ -16,7 +18,7 @@ interface Messenger {
   avatar_url: string | null;
 }
 
-interface ChatRoom {
+interface ChatRoomDef { // Renamed to avoid conflict with component name
   id: string;
   name: string;
   description: string | null;
@@ -43,7 +45,7 @@ interface Message {
 }
 
 interface ChatRoomProps {
-  room: ChatRoom;
+  room: ChatRoomDef; // Use renamed interface
   userId: string;
 }
 
@@ -51,66 +53,212 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
   const [messengers, setMessengers] = useState<Record<string, Messenger>>({});
-  const [loading, setLoading] = useState(true);
+  const [loadingInitial, setLoadingInitial] = useState(true); // Renamed for clarity
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreOldMessages, setHasMoreOldMessages] = useState(true);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null); // Ref for the scrollable message list container
+
+  const fetchMessengerProfiles = useCallback(async (userIds: string[]) => {
+    const idsToFetch = userIds.filter(id => !messengers[id]);
+    if (idsToFetch.length === 0) return;
+
+    try {
+      const { data: messengerData, error: messengerError } = await supabase
+        .from("messengers")
+        .select("*")
+        .in("user_id", idsToFetch);
+
+      if (messengerError) throw messengerError;
+
+      if (messengerData) {
+        const newMessengersMap = messengerData.reduce((acc, profile) => {
+          acc[profile.user_id] = profile as Messenger;
+          return acc;
+        }, {} as Record<string, Messenger>);
+        setMessengers(prev => ({ ...prev, ...newMessengersMap }));
+      }
+    } catch (error: any) {
+      console.warn("Failed to fetch some messenger profiles:", error.message);
+      // Partial success is okay, don't need to toast for every minor profile fetch issue
+    }
+  }, [messengers]); // Dependency: messengers map
+
+  const fetchInitialMessages = useCallback(async () => {
+    setLoadingInitial(true);
+    setHasMoreOldMessages(true); // Reset for room changes
+    try {
+      const { data: messagesData, error: messagesError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("room_id", room.id)
+        .order("created_at", { ascending: false }) // Fetch newest first for pagination
+        .limit(MESSAGES_PER_PAGE);
+
+      if (messagesError) throw messagesError;
+
+      const newMessages = (messagesData || []).reverse(); // Reverse to display oldest first in the chunk
+      setMessages(newMessages);
+
+      if ((messagesData?.length || 0) < MESSAGES_PER_PAGE) {
+        setHasMoreOldMessages(false);
+      }
+
+      const userIdsToFetch = new Set<string>();
+      newMessages.forEach(msg => userIdsToFetch.add(msg.user_id));
+      if (userIdsToFetch.size > 0) {
+        fetchMessengerProfiles(Array.from(userIdsToFetch));
+      }
+
+      // Fetch pinned messages (can be separate as it's a smaller list)
+      const { data: pinnedData, error: pinnedError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("room_id", room.id)
+        .eq("is_pinned", true)
+        .order("created_at", { ascending: false });
+      if (pinnedError) throw pinnedError;
+      setPinnedMessages(pinnedData || []);
+      (pinnedData || []).forEach(msg => userIdsToFetch.add(msg.user_id)); // Also fetch their profiles if not already
+      if (userIdsToFetch.size > 0) { // Re-check if pinned messages added new users
+         fetchMessengerProfiles(Array.from(userIdsToFetch));
+      }
+
+
+    } catch (error: any) {
+      console.error("Failed to fetch initial room data:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to load messages.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingInitial(false);
+    }
+  }, [room.id, toast, fetchMessengerProfiles]);
+
+  const fetchOlderMessages = useCallback(async () => {
+    if (loadingOlder || !hasMoreOldMessages || messages.length === 0) return;
+
+    setLoadingOlder(true);
+    const oldestMessageTimestamp = messages[0]?.created_at;
+    if (!oldestMessageTimestamp) {
+      setLoadingOlder(false);
+      setHasMoreOldMessages(false);
+      return;
+    }
+
+    try {
+      const { data: olderMessagesData, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("room_id", room.id)
+        .lt("created_at", oldestMessageTimestamp)
+        .order("created_at", { ascending: false })
+        .limit(MESSAGES_PER_PAGE);
+
+      if (error) throw error;
+
+      const newOlderMessages = (olderMessagesData || []).reverse();
+
+      // Preserve scroll position
+      const messageListEl = messageListRef.current;
+      const oldScrollHeight = messageListEl?.scrollHeight || 0;
+      const oldScrollTop = messageListEl?.scrollTop || 0;
+      const firstVisibleMessageIdBeforeLoad = messages[0]?.id;
+
+
+      setMessages(prev => [...newOlderMessages, ...prev]);
+
+      if ((olderMessagesData?.length || 0) < MESSAGES_PER_PAGE) {
+        setHasMoreOldMessages(false);
+      }
+
+      const userIdsToFetch = new Set<string>();
+      newOlderMessages.forEach(msg => userIdsToFetch.add(msg.user_id));
+      if (userIdsToFetch.size > 0) {
+        fetchMessengerProfiles(Array.from(userIdsToFetch));
+      }
+
+      // Restore scroll after DOM updates
+      if (messageListEl && firstVisibleMessageIdBeforeLoad) {
+         // Wait for DOM to update
+        requestAnimationFrame(() => {
+            const firstMessageNow = messageListEl.querySelector(`[data-message-id="${firstVisibleMessageIdBeforeLoad}"]`);
+            if (firstMessageNow) {
+                 messageListEl.scrollTop = (firstMessageNow as HTMLElement).offsetTop - oldScrollTop + (messageListEl.scrollHeight - oldScrollHeight) ;
+            } else {
+                 // Fallback: adjust based on height change
+                 messageListEl.scrollTop = oldScrollTop + (messageListEl.scrollHeight - oldScrollHeight);
+            }
+        });
+      }
+
+
+    } catch (error: any) {
+      console.error("Failed to fetch older messages:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to load older messages.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [loadingOlder, hasMoreOldMessages, messages, room.id, toast, fetchMessengerProfiles]);
+
 
   useEffect(() => {
-    fetchRoomData();
+    fetchInitialMessages(); // Fetch initial messages when room changes
 
     const messageChannel = supabase
-      .channel(`room-${room.id}-messages-v2`) // Ensure unique channel name if old one is cached
+      .channel(`room-${room.id}-messages-v3`) // Incremented version for safety
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${room.id}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${room.id}` },
         (payload) => {
           const newMessage = payload.new as Message;
-          setMessages(prev => [...prev, newMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+          // Add new message only if it's not already in the list (e.g., from optimistic update)
+          setMessages(prev => {
+            if (prev.find(msg => msg.id === newMessage.id)) return prev;
+            return [...prev, newMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          });
           if (newMessage.is_pinned) {
-            setPinnedMessages(prev => [...prev, newMessage].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+             setPinnedMessages(prev => {
+                if (prev.find(msg => msg.id === newMessage.id)) return prev;
+                return [...prev, newMessage].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+             });
           }
-          // Fetch messenger info if not already present
-          if (newMessage.user_id && !messengers[newMessage.user_id]) {
-            fetchMessengerById(newMessage.user_id);
+          if (newMessage.user_id) {
+            fetchMessengerProfiles([newMessage.user_id]);
+          }
+          // Auto-scroll for new messages if user is near the bottom
+          if (messageListRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
+            if (scrollHeight - scrollTop - clientHeight < 200) { // If scrolled within 200px of bottom
+              setTimeout(() => scrollToBottom(true), 0); // Smooth scroll to new message
+            }
           }
         }
       )
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${room.id}`,
-        },
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${room.id}` },
         (payload) => {
           const updatedMessage = payload.new as Message;
-          // Update in main messages list
           setMessages(prev => prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg)
                                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-
-          // Update in pinned messages list
           setPinnedMessages(prevPinned => {
             const isAlreadyPinned = prevPinned.some(pm => pm.id === updatedMessage.id);
             if (updatedMessage.is_pinned) {
-              if (isAlreadyPinned) {
-                // Message was already pinned, update its content
-                return prevPinned.map(pm => pm.id === updatedMessage.id ? updatedMessage : pm)
-                                 .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-              } else {
-                // Message was not pinned, now it is, add it
-                return [...prevPinned, updatedMessage]
-                         .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-              }
+              return isAlreadyPinned
+                ? prevPinned.map(pm => pm.id === updatedMessage.id ? updatedMessage : pm).sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                : [...prevPinned, updatedMessage].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             } else {
-              // Message was unpinned, remove it
               return prevPinned.filter(pm => pm.id !== updatedMessage.id);
             }
           });
@@ -118,44 +266,44 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
       )
       .on(
         'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${room.id}`,
-        },
+        { event: 'DELETE', schema: 'public', table: 'messages', filter: `room_id=eq.${room.id}` },
         (payload) => {
-          const deletedMessage = payload.old as Message;
-          setMessages(prev => prev.filter(msg => msg.id !== deletedMessage.id));
-          setPinnedMessages(prev => prev.filter(pm => pm.id !== deletedMessage.id));
+          const deletedMessageId = payload.old.id as string;
+          setMessages(prev => prev.filter(msg => msg.id !== deletedMessageId));
+          setPinnedMessages(prev => prev.filter(pm => pm.id !== deletedMessageId));
         }
       )
       .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Subscribed to messages in room ${room.id}`);
-        }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (status === 'SUBSCRIBED') console.log(`Subscribed to messages in room ${room.id}`);
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.error(`Subscription error in room ${room.id}:`, err);
-          toast({
-            title: "Real-time connection error",
-            description: "Could not connect to real-time updates. Please refresh.",
-            variant: "destructive",
-          });
+          toast({ title: "Real-time connection error", variant: "destructive" });
         }
       });
 
     return () => {
       supabase.removeChannel(messageChannel);
     };
-  }, [room.id, toast]);
+  }, [room.id, toast, fetchInitialMessages, fetchMessengerProfiles]); // Added fetchInitialMessages
 
   useEffect(() => {
-    // Only scroll if not replying, to avoid jumping while typing a reply.
-    // User can manually scroll if needed.
-    if (!replyingTo) {
-      scrollToBottom();
+    if (!replyingTo && messages.length > 0 && !loadingInitial && !loadingOlder) {
+        // Scroll to bottom only after initial load and not when loading older messages
+        // And only if we are not currently in a reply state (which might open keyboard)
+        const lastMessage = messages[messages.length-1];
+        // If the last message is from the current user, scroll immediately.
+        // Otherwise, might be less aggressive or conditional based on user scroll position.
+        if(lastMessage?.user_id === userId) {
+            scrollToBottom(true); // Smooth scroll for own new messages
+        } else if (messageListRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
+            if (scrollHeight - scrollTop - clientHeight < 300) { // If user is already near bottom
+                 scrollToBottom(true);
+            }
+        }
     }
-  }, [messages, replyingTo]);
+  }, [messages, replyingTo, loadingInitial, loadingOlder, userId]);
+
 
   // Handle global clicks to close emoji reactions (existing useEffect)
   useEffect(() => {
@@ -169,89 +317,14 @@ export const ChatRoom = ({ room, userId }: ChatRoomProps) => {
     return () => document.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  const fetchMessengerById = async (messengerUserId: string) => {
-    if (messengers[messengerUserId]) return; // Already fetched or fetching
-
-    try {
-      const { data, error } = await supabase
-        .from("messengers") // Ensure this table name is correct
-        .select("*")
-        .eq("user_id", messengerUserId) // Assuming 'user_id' in 'messengers' is the auth user id
-        .single();
-
-      if (error) {
-        console.warn(`Failed to fetch messenger profile for ${messengerUserId}:`, error.message);
-        return;
-      }
-      if (data) {
-        setMessengers(prev => ({ ...prev, [messengerUserId]: data as Messenger }));
-      }
-    } catch (e) {
-      console.warn(`Exception fetching messenger profile for ${messengerUserId}:`, e);
+  const scrollToBottom = (smooth: boolean = false) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
     }
-  };
-
-
-  const fetchRoomData = async () => {
-    setLoading(true);
-    try {
-      // Fetch all messages
-      const { data: messagesData, error: messagesError } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("room_id", room.id)
-        .order("created_at", { ascending: true });
-      if (messagesError) throw messagesError;
-      setMessages(messagesData || []);
-
-      // Fetch pinned messages
-      const { data: pinnedMessagesData, error: pinnedMessagesError } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("room_id", room.id)
-        .eq("is_pinned", true)
-        .order("created_at", { ascending: false }); // Order for display in PinnedMessageBar
-      if (pinnedMessagesError) throw pinnedMessagesError;
-      setPinnedMessages(pinnedMessagesData || []);
-
-      // Collect all unique user IDs from both lists
-      const userIdsToFetch = new Set<string>();
-      (messagesData || []).forEach(msg => userIdsToFetch.add(msg.user_id));
-      (pinnedMessagesData || []).forEach(msg => userIdsToFetch.add(msg.user_id));
-
-      if (userIdsToFetch.size > 0) {
-        const { data: messengerData, error: messengerError } = await supabase
-          .from("messengers") // Assuming 'messengers' is the correct table name for profiles
-          .select("*")
-          .in("user_id", Array.from(userIdsToFetch)); // Assuming 'user_id' in messengers links to auth.uid
-
-        if (messengerError) throw messengerError;
-
-        const messengersMap = (messengerData || []).reduce((acc, profile) => {
-          acc[profile.user_id] = profile as Messenger; // Ensure 'user_id' is the key
-          return acc;
-        }, {} as Record<string, Messenger>);
-        setMessengers(messengersMap);
-      }
-
-    } catch (error: any) {
-      console.error("Failed to fetch room data:", error.message);
-      toast({
-        title: "Error",
-        description: "Failed to fetch messages or pinned messages.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const scrollToBottom = () => {
-    // Debounce or make conditional if causing issues with rapid updates
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const deleteMessage = async (messageId: string) => {
+    // ... (existing deleteMessage logic remains the same)
     try {
       const { error } = await supabase
         .from("messages")
