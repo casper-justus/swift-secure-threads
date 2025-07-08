@@ -1,5 +1,3 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { MessageItem } from "./MessageItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -21,8 +19,8 @@ interface Message {
 }
 
 interface Messenger {
-  id: string;
-  user_id: string;
+  id: string; // This is the profile ID from 'profiles' or 'messengers' table
+  user_id: string; // This is the auth.uid()
   username: string | null;
   display_name: string | null;
   avatar_url: string | null;
@@ -31,6 +29,7 @@ interface Messenger {
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
+  messengers: Record<string, Messenger>; // Expect messengers to be passed as a prop
   loading: boolean;
   onDeleteMessage: (messageId: string) => void;
   onReply?: (message: Message) => void;
@@ -40,36 +39,16 @@ interface MessageListProps {
 export const MessageList = ({ 
   messages, 
   currentUserId, 
+  messengers, // Use this prop
   loading, 
   onDeleteMessage,
   onReply,
   onForward 
 }: MessageListProps) => {
-  const [messengers, setMessengers] = useState<Record<string, Messenger>>({});
 
-  useEffect(() => {
-    const userIds = [...new Set(messages.map(msg => msg.user_id))];
-    fetchMessengers(userIds);
-  }, [messages]);
+  // Removed useState and useEffect for fetching messengers, as it's now a prop.
 
-  const fetchMessengers = async (userIds: string[]) => {
-    if (userIds.length === 0) return;
-
-    const { data, error } = await supabase
-      .from("messengers")
-      .select("*")
-      .in("user_id", userIds);
-
-    if (data && !error) {
-      const messengersMap = data.reduce((acc, messenger) => {
-        acc[messenger.user_id] = messenger;
-        return acc;
-      }, {} as Record<string, Messenger>);
-      setMessengers(messengersMap);
-    }
-  };
-
-  if (loading) {
+  if (loading && messages.length === 0) { // Show loader only if messages are empty during initial load
     return (
       <div className="flex items-center justify-center h-full bg-[#36393f]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5865f2]"></div>
@@ -79,9 +58,9 @@ export const MessageList = ({
 
   return (
     <ScrollArea className="flex-1 bg-[#36393f] min-h-0">
-      <div className="p-2 md:p-4 pb-20">
+      <div className="p-2 md:p-4 pb-20"> {/* Ensure enough padding at bottom for input overlap */}
         {messages.map((message) => {
-          const messenger = messengers[message.user_id];
+          const messenger = messengers[message.user_id]; // Get messenger from prop
           const isOwnMessage = message.user_id === currentUserId;
           const replyToMessage = message.reply_to_message_id 
             ? messages.find(m => m.id === message.reply_to_message_id)
@@ -101,7 +80,7 @@ export const MessageList = ({
           );
         })}
         
-        {messages.length === 0 && (
+        {messages.length === 0 && !loading && ( // Show "No messages" only if not loading and no messages
           <div className="text-center text-[#72767d] py-8">
             <p>No messages yet</p>
             <p className="text-sm">Start the conversation!</p>
