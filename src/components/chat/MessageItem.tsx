@@ -352,7 +352,7 @@ export const MessageItem = ({
               className="absolute -bottom-0.5 -right-0.5 w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-[#36393f]"
             />
           </div>
-        </MessageContextMenu>
+        </MessageAvatarActionsMenu>
         
         <div className={`flex-1 max-w-[85%] md:max-w-md ${isOwnMessage ? 'text-right' : ''}`}>
           {replyToMessage && (

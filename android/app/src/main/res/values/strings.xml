@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Swift Secure Threads</string>
+    <string name="title_activity_main">Swift Secure Threads</string>
+    <string name="package_name">com.kazpian.swiftsecurethreads</string>
+    <string name="custom_url_scheme">com.kazpian.swiftsecurethreads</string>
+</resources>
